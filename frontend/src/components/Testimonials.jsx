@@ -90,7 +90,7 @@ export default function Testimonials() {
                       className="thumbnail-overlay"
                     >
                       {/* Play Button Icon */}
-                      <div className="flex-center" style={{
+                      <div className="flex-center play-button-hover" style={{
                         width: '56px',
                         height: '56px',
                         borderRadius: '50%',
@@ -99,7 +99,7 @@ export default function Testimonials() {
                         boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
                         marginBottom: '10px',
                         transition: 'transform 0.2s'
-                      }} className="play-button-hover">
+                      }}>
                         <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M8 5v14l11-7z"></path>
                         </svg>

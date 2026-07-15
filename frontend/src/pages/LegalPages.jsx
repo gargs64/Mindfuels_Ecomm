@@ -30,7 +30,7 @@ export default function LegalPages() {
   };
 
   return (
-    <div className="container" style={{ padding: '40px 20px 80px 20px', fontFamily: 'var(--font-body)', display: 'flex', gap: '30px' }} className="legal-layout-split">
+    <div className="container legal-layout-split" style={{ padding: '40px 20px 80px 20px', fontFamily: 'var(--font-body)', display: 'flex', gap: '30px' }}>
       
       {/* 1. Left Sticky Navigation Menu */}
       <nav className="glass-panel sticky-nav" style={{
