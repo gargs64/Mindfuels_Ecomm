@@ -1,0 +1,10 @@
+{
+  "name": "mindfuels-devtools",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Developer utilities for the Mindfuels project",
+  "scripts": {
+    "changelog": "node changelog_server.js",
+    "history": "node changelog_server.js"
+  }
+}
