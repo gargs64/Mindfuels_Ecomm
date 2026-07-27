@@ -179,4 +179,4 @@ curl https://mindfuels-backend.onrender.com/health
 
 ## 📝 License
 
-© 2024 Mindfuels Book Publishers. All rights reserved.
+© 2002 Mindfuel Publisher and Distributors. All rights reserved.
