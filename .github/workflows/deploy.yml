@@ -1,5 +1,0 @@
-# DISABLED - Hostinger now deploys natively from GitHub
-# This FTP workflow is no longer needed.
-# The active deployment is managed via Hostinger hPanel → Deployments → main branch
-
-# name: Deploy Mindfuels to Hostinger
