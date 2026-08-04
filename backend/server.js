@@ -69,18 +69,27 @@ const __dirname = path.dirname(__filename);
 
 // Serve static frontend files if found (Hostinger deployment support)
 const candidatePaths = [
+  path.join(__dirname, 'public'),
   path.join(__dirname, '../public_html'),
-  path.join(__dirname, '../frontend/dist'),
-  path.join(__dirname, 'public')
+  path.join(__dirname, '../../public_html'),
+  '/home/u241066033/domains/mindfuelspublisher.com/public_html',
+  '/home/u241066033/public_html',
+  path.join(__dirname, '../frontend/dist')
 ];
-const staticPath = candidatePaths.find(p => fs.existsSync(p));
+
+// Ensure index.html actually exists in the selected directory
+const staticPath = candidatePaths.find(p => fs.existsSync(path.join(p, 'index.html')));
 
 if (staticPath) {
   console.log(`[Server] Serving frontend static assets from: ${staticPath}`);
   app.use(express.static(staticPath));
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api') || req.path === '/health') return next();
-    res.sendFile(path.join(staticPath, 'index.html'));
+    res.sendFile(path.join(staticPath, 'index.html'), (err) => {
+      if (err) {
+        res.status(404).json({ error: 'Page not found' });
+      }
+    });
   });
 } else {
   // 404 Route handler
