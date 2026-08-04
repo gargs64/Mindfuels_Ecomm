@@ -97,6 +97,24 @@ export default function ProductDetailModal({ productId, onClose }) {
     }
   };
 
+  const handlePrevImage = (e) => {
+    e.stopPropagation();
+    const currentIndex = images.indexOf(activeImage);
+    if (currentIndex > -1) {
+      const prevIndex = (currentIndex - 1 + images.length) % images.length;
+      setActiveImage(images[prevIndex]);
+    }
+  };
+
+  const handleNextImage = (e) => {
+    e.stopPropagation();
+    const currentIndex = images.indexOf(activeImage);
+    if (currentIndex > -1) {
+      const nextIndex = (currentIndex + 1) % images.length;
+      setActiveImage(images[nextIndex]);
+    }
+  };
+
   const handleAddToCartClick = () => {
     addToCart(product, quantity);
     onClose();
@@ -115,7 +133,23 @@ export default function ProductDetailModal({ productId, onClose }) {
           {/* Left Side: Photo Gallery Column */}
           <div className="gallery-section">
             <div className="main-preview-container">
-              <img src={activeImage} alt={product.title} />
+              {images.length > 1 && (
+                <>
+                  <button onClick={handlePrevImage} className="gallery-nav-btn" style={{ left: '12px' }} aria-label="Previous image">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="19" y1="12" x2="5" y2="12"></line>
+                      <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                  </button>
+                  <button onClick={handleNextImage} className="gallery-nav-btn" style={{ right: '12px' }} aria-label="Next image">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                      <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                  </button>
+                </>
+              )}
+              <img src={activeImage} alt={product.title} style={{ userSelect: 'none' }} />
             </div>
             
             {/* Thumbnail Row */}
@@ -138,7 +172,6 @@ export default function ProductDetailModal({ productId, onClose }) {
           <div className="details-section">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
-                <span className="badge badge-stock" style={{ marginBottom: '8px' }}>{product.tag1}</span>
                 <h2 style={{ fontSize: '1.6rem', fontWeight: 800, lineHeight: 1.25 }}>{product.title}</h2>
               </div>
               
@@ -170,11 +203,7 @@ export default function ProductDetailModal({ productId, onClose }) {
               <p style={{ fontSize: '0.95rem', color: 'var(--dark)', whiteSpace: 'pre-line' }}>{product.description}</p>
             </div>
 
-            {/* Specifications details */}
-            <div style={{ display: 'flex', gap: '16px', background: 'var(--light)', padding: '10px 14px', borderRadius: '8px', fontSize: '0.8rem', color: 'var(--dark-light)', marginBottom: '16px' }}>
-              <div><strong>Weight:</strong> {product.weight} kg</div>
-              <div><strong>Dims:</strong> {product.length}x{product.width}x{product.height} cm</div>
-            </div>
+
 
             {/* Cart Booking Action Area */}
             {isOutOfStock ? (
@@ -274,6 +303,7 @@ export default function ProductDetailModal({ productId, onClose }) {
           justify-content: center;
         }
         .main-preview-container {
+          position: relative;
           width: 100%;
           aspect-ratio: 1/1.25;
           display: flex;
@@ -283,6 +313,31 @@ export default function ProductDetailModal({ productId, onClose }) {
           border-radius: 12px;
           background: #fff;
           border: 1px solid var(--border);
+        }
+        .gallery-nav-btn {
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.9);
+          border: 2px solid var(--dark);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          color: var(--dark);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+          transition: background 0.2s, transform 0.2s, opacity 0.2s;
+          z-index: 10;
+        }
+        .gallery-nav-btn:hover {
+          background: #ffffff;
+          transform: translateY(-50%) scale(1.1);
+        }
+        .gallery-nav-btn:active {
+          transform: translateY(-50%) scale(0.95);
         }
         .main-preview-container img {
           max-width: 100%;

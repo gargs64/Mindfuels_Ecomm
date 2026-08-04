@@ -43,9 +43,6 @@ export default function ShopByAge({ navigate }) {
       <div className="container text-center" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '40px' }}>
         
         <div style={{ textAlign: 'center' }}>
-          <span className="badge badge-discount" style={{ background: 'rgba(255, 210, 90, 0.2)', color: '#D97706', marginBottom: '8px' }}>
-            Structured Learning
-          </span>
           <h2 style={{ fontSize: '2rem', fontWeight: 800 }}>Shop by Age Group</h2>
           <p style={{ color: 'var(--dark-light)', marginTop: '8px', maxWidth: '600px' }}>
             Find curriculum-aligned worksheets and activity books tailored exactly to your child's age and grade level.

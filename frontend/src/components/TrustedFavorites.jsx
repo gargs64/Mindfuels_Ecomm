@@ -50,14 +50,8 @@ export default function TrustedFavorites({ onProductClick }) {
       {/* 1. Teacher's Recommendation Carousel */}
       {showTeachersRec && teachersRecProducts.length > 0 && (
         <div className="fade-in">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '20px' }}>
-            <div>
-              <span className="badge badge-discount" style={{ background: 'rgba(255, 90, 54, 0.1)', color: 'var(--primary)', marginBottom: '8px' }}>
-                Curriculum Approved
-              </span>
-              <h2 style={{ fontSize: '1.8rem', fontWeight: 800 }}>Teacher's Recommendation</h2>
-            </div>
-            <span style={{ fontSize: '0.85rem', color: 'var(--primary)', fontWeight: 600 }}>Swipe for More ➔</span>
+          <div style={{ marginBottom: '20px' }}>
+            <h2 style={{ fontSize: '1.8rem', fontWeight: 800 }}>Teacher's Recommendation</h2>
           </div>
 
           {/* Horizontal Scroll Carousel */}
@@ -84,14 +78,8 @@ export default function TrustedFavorites({ onProductClick }) {
       {/* 2. Parent's First Choice Carousel */}
       {showParentsChoice && parentsChoiceProducts.length > 0 && (
         <div className="fade-in">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '20px' }}>
-            <div>
-              <span className="badge badge-discount" style={{ background: 'rgba(74, 144, 226, 0.1)', color: 'var(--secondary)', marginBottom: '8px' }}>
-                Bestsellers
-              </span>
-              <h2 style={{ fontSize: '1.8rem', fontWeight: 800 }}>Parent's First Choice</h2>
-            </div>
-            <span style={{ fontSize: '0.85rem', color: 'var(--secondary)', fontWeight: 600 }}>Swipe for More ➔</span>
+          <div style={{ marginBottom: '20px' }}>
+            <h2 style={{ fontSize: '1.8rem', fontWeight: 800 }}>Parent's First Choice</h2>
           </div>
 
           {/* Horizontal Scroll Carousel */}

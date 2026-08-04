@@ -30,7 +30,7 @@ export default function AllProducts({ onProductClick, navigate }) {
   const interestsList = [
     'Story Books', 'Rhymes & Poems', 'Activity Books', 
     'Calligraphy & Cursive', 'Art & Creativity', 'Phonetics', 
-    'All Subject Activity Books'
+    'All-Subject Activity Books'
   ];
 
   const subjectsList = [
@@ -38,8 +38,8 @@ export default function AllProducts({ onProductClick, navigate }) {
     'Mental Ability & GK', 'All-in-One'
   ];
 
-  // Parse URL query string on mount and URL updates
-  useEffect(() => {
+  // Parse URL query string on mount and on popstate navigation events
+  const syncFiltersFromUrl = () => {
     const params = new URLSearchParams(window.location.search);
     
     const classParam = params.get('class');
@@ -53,7 +53,18 @@ export default function AllProducts({ onProductClick, navigate }) {
     setSelectedSubjects(subjectParam ? subjectParam.split(',') : []);
     setSearchWord(searchParam);
     setCurrentPage(pageParam);
-  }, [window.location.search]);
+  };
+
+  useEffect(() => {
+    syncFiltersFromUrl();
+
+    const handlePopState = () => {
+      syncFiltersFromUrl();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   // Fetch products whenever filters or page changes
   useEffect(() => {
@@ -103,32 +114,27 @@ export default function AllProducts({ onProductClick, navigate }) {
   };
 
   const handleFilterToggle = (category, value) => {
-    let updatedClasses = [...selectedClasses];
-    let updatedInterests = [...selectedInterests];
-    let updatedSubjects = [...selectedSubjects];
+    // One-at-a-time across ALL categories: selecting any filter clears all others
+    let updatedClasses = [];
+    let updatedInterests = [];
+    let updatedSubjects = [];
 
     if (category === 'class') {
-      if (updatedClasses.includes(value)) {
-        updatedClasses = updatedClasses.filter(c => c !== value);
-      } else {
-        updatedClasses.push(value);
-      }
+      // Toggle off if same is clicked, else select new one
+      if (!selectedClasses.includes(value)) updatedClasses = [value];
     } else if (category === 'interest') {
-      if (updatedInterests.includes(value)) {
-        updatedInterests = updatedInterests.filter(i => i !== value);
-      } else {
-        updatedInterests.push(value);
-      }
+      if (!selectedInterests.includes(value)) updatedInterests = [value];
     } else if (category === 'subject') {
-      if (updatedSubjects.includes(value)) {
-        updatedSubjects = updatedSubjects.filter(s => s !== value);
-      } else {
-        updatedSubjects.push(value);
-      }
+      if (!selectedSubjects.includes(value)) updatedSubjects = [value];
     }
 
-    setCurrentPage(1); // reset to page 1 on filter change
-    updateUrlParams(updatedClasses, updatedInterests, updatedSubjects, searchWord, 1);
+    setSelectedClasses(updatedClasses);
+    setSelectedInterests(updatedInterests);
+    setSelectedSubjects(updatedSubjects);
+    setSearchWord('');
+    setCurrentPage(1);
+
+    updateUrlParams(updatedClasses, updatedInterests, updatedSubjects, '', 1);
   };
 
   const clearAllFilters = () => {
@@ -153,8 +159,7 @@ export default function AllProducts({ onProductClick, navigate }) {
       {/* Search Result Banner / Headline */}
       <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h1 style={{ fontSize: '2rem', fontWeight: 800 }}>Children's Books</h1>
-          <p style={{ color: 'var(--dark-light)', fontSize: '0.9rem' }}>Showing {products.length} of {totalItems} books found</p>
+          <p style={{ color: 'var(--dark-light)', fontSize: '0.95rem', fontWeight: 600 }}>Showing {products.length} of {totalItems} books found</p>
         </div>
         
         {/* Mobile Filter Toggle */}
@@ -199,61 +204,111 @@ export default function AllProducts({ onProductClick, navigate }) {
           {/* Filter Group: Shop by Class */}
           <div className="glass-panel" style={{ padding: '20px', borderRadius: '16px', border: '1px solid var(--border)' }}>
             <h4 style={{ fontSize: '1rem', marginBottom: '14px', borderBottom: '1px solid var(--border)', paddingBottom: '6px' }}>Shop by Class</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {classesList.map(item => (
-                <label key={item.value} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedClasses.includes(item.value)}
-                    onChange={() => handleFilterToggle('class', item.value)}
-                    style={{ width: '16px', height: '16px', accentColor: 'var(--primary)' }}
-                  />
-                  {item.label}
-                </label>
-              ))}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {classesList.map(item => {
+                const isSelected = selectedClasses.includes(item.value);
+                return (
+                  <div
+                    key={item.value}
+                    onClick={() => handleFilterToggle('class', item.value)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                      background: isSelected ? 'rgba(255, 90, 54, 0.08)' : 'transparent',
+                      color: isSelected ? 'var(--primary)' : 'var(--dark-light)',
+                      fontWeight: isSelected ? 700 : 500,
+                      border: isSelected ? '1px solid rgba(255, 90, 54, 0.2)' : '1px solid transparent',
+                      transition: 'all 0.2s ease'
+                    }}
+                    className="filter-option-item"
+                  >
+                    <span>{item.label}</span>
+                    {isSelected && (
+                      <span style={{ fontSize: '0.9rem', color: 'var(--primary)', fontWeight: 'bold' }}>✓</span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
           {/* Filter Group: Shop by Interest */}
           <div className="glass-panel" style={{ padding: '20px', borderRadius: '16px', border: '1px solid var(--border)' }}>
             <h4 style={{ fontSize: '1rem', marginBottom: '14px', borderBottom: '1px solid var(--border)', paddingBottom: '6px' }}>Shop by Interest</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '200px', overflowY: 'auto' }}>
-              {interestsList.map(item => (
-                <label key={item} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedInterests.includes(item)}
-                    onChange={() => handleFilterToggle('interest', item)}
-                    style={{ width: '16px', height: '16px', accentColor: 'var(--primary)' }}
-                  />
-                  {item}
-                </label>
-              ))}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto' }}>
+              {interestsList.map(item => {
+                const isSelected = selectedInterests.includes(item);
+                return (
+                  <div
+                    key={item}
+                    onClick={() => handleFilterToggle('interest', item)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                      background: isSelected ? 'rgba(255, 90, 54, 0.08)' : 'transparent',
+                      color: isSelected ? 'var(--primary)' : 'var(--dark-light)',
+                      fontWeight: isSelected ? 700 : 500,
+                      border: isSelected ? '1px solid rgba(255, 90, 54, 0.2)' : '1px solid transparent',
+                      transition: 'all 0.2s ease'
+                    }}
+                    className="filter-option-item"
+                  >
+                    <span>{item}</span>
+                    {isSelected && (
+                      <span style={{ fontSize: '0.9rem', color: 'var(--primary)', fontWeight: 'bold' }}>✓</span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
           {/* Filter Group: Shop by Subject */}
           <div className="glass-panel" style={{ padding: '20px', borderRadius: '16px', border: '1px solid var(--border)' }}>
             <h4 style={{ fontSize: '1rem', marginBottom: '14px', borderBottom: '1px solid var(--border)', paddingBottom: '6px' }}>Shop by Subject</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {subjectsList.map(item => (
-                <label key={item} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedSubjects.includes(item)}
-                    onChange={() => handleFilterToggle('subject', item)}
-                    style={{ width: '16px', height: '16px', accentColor: 'var(--primary)' }}
-                  />
-                  {item}
-                </label>
-              ))}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {subjectsList.map(item => {
+                const isSelected = selectedSubjects.includes(item);
+                return (
+                  <div
+                    key={item}
+                    onClick={() => handleFilterToggle('subject', item)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                      background: isSelected ? 'rgba(255, 90, 54, 0.08)' : 'transparent',
+                      color: isSelected ? 'var(--primary)' : 'var(--dark-light)',
+                      fontWeight: isSelected ? 700 : 500,
+                      border: isSelected ? '1px solid rgba(255, 90, 54, 0.2)' : '1px solid transparent',
+                      transition: 'all 0.2s ease'
+                    }}
+                    className="filter-option-item"
+                  >
+                    <span>{item}</span>
+                    {isSelected && (
+                      <span style={{ fontSize: '0.9rem', color: 'var(--primary)', fontWeight: 'bold' }}>✓</span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          {/* Clear Filters button */}
-          <button onClick={clearAllFilters} className="btn btn-secondary" style={{ width: '100%' }}>
-            Clear All Filters
-          </button>
         </aside>
 
         {/* Backdrop for mobile drawer */}
@@ -264,61 +319,112 @@ export default function AllProducts({ onProductClick, navigate }) {
         )}
 
         {/* 2. Right Side: Product Catalog Grid */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '40px' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '40px', position: 'relative' }}>
           
-          {loading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '100px 0' }}>
-              <div className="spinner"></div>
-            </div>
-          ) : products.length === 0 ? (
-            <div className="glass-panel" style={{ textAlign: 'center', padding: '60px 20px', borderRadius: '16px' }}>
-              <h3 style={{ fontSize: '1.4rem', marginBottom: '8px' }}>No books matching your criteria</h3>
-              <p style={{ color: 'var(--dark-light)', fontSize: '0.95rem', marginBottom: '16px' }}>Try relaxing some filters or removing the active search.</p>
-              <button onClick={clearAllFilters} className="btn btn-primary">Reset Catalog</button>
-            </div>
-          ) : (
-            <>
-              {/* Responsive Grid */}
+          {/* Seamless loading bar — shown at top of grid while fetching */}
+          {loading && (
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '3px',
+              borderRadius: '2px',
+              background: 'var(--primary)',
+              animation: 'loadBar 1.2s ease-in-out infinite',
+              zIndex: 10
+            }} />
+          )}
+
+          {/* Grid or empty state */}
+          <div style={{ position: 'relative', opacity: 1, transition: 'opacity 0.25s ease' }}>
+            {loading ? (
               <div className="product-grid">
-                {products.map(product => (
-                  <ProductCard
-                    key={product.product_id}
-                    product={product}
-                    onClick={onProductClick}
-                  />
+                {Array(8).fill(null).map((_, idx) => (
+                  <div key={idx} className="product-card" style={{
+                    background: 'var(--white)',
+                    borderRadius: '16px',
+                    overflow: 'hidden',
+                    border: '1px solid var(--border)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    position: 'relative'
+                  }}>
+                    <div className="aspect-ratio-box skeleton-pulse" style={{ background: '#E2E8F0' }}></div>
+                    <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', flexGrow: 1, gap: '12px' }}>
+                      <div className="skeleton-pulse" style={{ height: '16px', width: '85%', borderRadius: '4px', background: '#E2E8F0' }}></div>
+                      <div className="skeleton-pulse" style={{ height: '16px', width: '60%', borderRadius: '4px', background: '#E2E8F0' }}></div>
+                      <div style={{ marginTop: 'auto', display: 'flex', gap: '8px' }}>
+                        <div className="skeleton-pulse" style={{ height: '24px', width: '60px', borderRadius: '4px', background: '#E2E8F0' }}></div>
+                      </div>
+                    </div>
+                  </div>
                 ))}
               </div>
-
-              {/* Pagination controls */}
-              {totalPages > 1 && (
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', marginTop: '20px' }}>
-                  <button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className={`btn btn-secondary ${currentPage === 1 ? 'btn-disabled' : ''}`}
-                    style={{ padding: '8px 18px', fontSize: '0.85rem' }}
-                  >
-                    ◀ Prev
-                  </button>
-                  <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--dark-light)' }}>
-                    Page {currentPage} of {totalPages}
-                  </span>
-                  <button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className={`btn btn-secondary ${currentPage === totalPages ? 'btn-disabled' : ''}`}
-                    style={{ padding: '8px 18px', fontSize: '0.85rem' }}
-                  >
-                    Next ▶
-                  </button>
+            ) : products.length === 0 ? (
+              <div className="glass-panel" style={{ textAlign: 'center', padding: '60px 20px', borderRadius: '16px' }}>
+                <h3 style={{ fontSize: '1.4rem', marginBottom: '8px' }}>No books matching your criteria</h3>
+                <p style={{ color: 'var(--dark-light)', fontSize: '0.95rem' }}>Try selecting a different filter or removing your search.</p>
+              </div>
+            ) : (
+              <>
+                {/* Responsive Grid */}
+                <div className="product-grid">
+                  {products.map(product => (
+                    <ProductCard
+                      key={product.product_id}
+                      product={product}
+                      onClick={onProductClick}
+                    />
+                  ))}
                 </div>
-              )}
-            </>
-          )}
+
+                {/* Pagination controls */}
+                {totalPages > 1 && (
+                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '16px', marginTop: '20px' }}>
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className={`btn btn-secondary ${currentPage === 1 ? 'btn-disabled' : ''}`}
+                      style={{ padding: '8px 18px', fontSize: '0.85rem' }}
+                    >
+                      ◀ Prev
+                    </button>
+                    <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--dark-light)' }}>
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className={`btn btn-secondary ${currentPage === totalPages ? 'btn-disabled' : ''}`}
+                      style={{ padding: '8px 18px', fontSize: '0.85rem' }}
+                    >
+                      Next ▶
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
 
       <style>{`
+        .filter-option-item {
+          transition: all 0.2s ease-in-out;
+        }
+        .filter-option-item:hover {
+          background: rgba(255, 90, 54, 0.04) !important;
+          color: var(--primary) !important;
+        }
+        .skeleton-pulse {
+          animation: skeletonPulse 1.5s ease-in-out infinite;
+        }
+        @keyframes skeletonPulse {
+          0% { opacity: 0.6; }
+          50% { opacity: 1; }
+          100% { opacity: 0.6; }
+        }
         @media (max-width: 768px) {
           .filter-sidebar {
             position: fixed !important;
@@ -342,6 +448,11 @@ export default function AllProducts({ onProductClick, navigate }) {
           .mobile-filter-btn {
             display: inline-flex !important;
           }
+        }
+        @keyframes loadBar {
+          0%   { transform: translateX(-100%); opacity: 1; }
+          50%  { transform: translateX(0%);    opacity: 1; }
+          100% { transform: translateX(100%);  opacity: 0; }
         }
       `}</style>
     </div>

@@ -8,7 +8,9 @@ dotenv.config();
  * Connect to Google Sheets API and fetch spreadsheet rows.
  */
 async function fetchSheetData() {
-  const privateKey = (process.env.GOOGLE_PRIVATE_KEY || '').replace(/\\n/g, '\n');
+  // Normalize the private key: strip surrounding quotes if present, then replace escaped \n with real newlines
+  const rawKey = (process.env.GOOGLE_PRIVATE_KEY || '').trim().replace(/^["']|["']$/g, '');
+  const privateKey = rawKey.replace(/\\n/g, '\n');
   const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
   const spreadsheetId = process.env.GOOGLE_SHEET_ID;
 

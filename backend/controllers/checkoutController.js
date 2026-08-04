@@ -1,7 +1,9 @@
 import crypto from 'crypto';
 import Razorpay from 'razorpay';
 import pool from '../config/db.js';
-import { createFshipShipment } from '../services/fshipService.js';
+import { createShiprocketShipment } from '../services/shiprocketService.js';
+import { sendOrderConfirmationEmail } from '../services/emailService.js';
+import { sendOrderConfirmationWhatsApp } from '../services/whatsappService.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -169,7 +171,7 @@ export const createOrder = async (req, res) => {
 };
 
 /**
- * Verifies Razorpay payment signature, updates inventory, books shipping via Fship, and clears cart.
+ * Verifies Razorpay payment signature, updates inventory, books shipping via Shiprocket, and clears cart.
  * Payload: { order_id, razorpay_order_id, razorpay_payment_id, razorpay_signature, mock_success }
  */
 export const verifyPayment = async (req, res) => {
@@ -257,8 +259,8 @@ export const verifyPayment = async (req, res) => {
 
     await connection.commit();
 
-    // 7. Shipping integration (Fship order creation)
-    // Run this outside the core payment transaction block to avoid locking rows during external network operations.
+    // 7. Shipping integration (Shiprocket order creation)
+    // Run outside the payment transaction to avoid locking rows during external network ops.
     const [addressInfo] = await pool.query('SELECT * FROM shipping_address WHERE id = ?', [order.address_id]);
     const address = addressInfo[0];
     const customerAddressText = `${address.address_line1}${address.address_line2 ? ', ' + address.address_line2 : ''}, ${address.city}, ${address.state}`;
@@ -291,13 +293,15 @@ export const verifyPayment = async (req, res) => {
     if (maxWidth <= 0) maxWidth = 15.0;
     if (totalHeight <= 0) totalHeight = 3.0;
 
-    const bookingResult = await createFshipShipment({
+    const bookingResult = await createShiprocketShipment({
       orderId: order_id,
       customer: {
         name: address.full_name,
         email: req.user.email || `${userId}@user.mindfuels.com`,
         phone: address.phone,
         address: customerAddressText,
+        city: address.city,
+        state: address.state,
         pincode: address.pincode
       },
       items: itemsWithInfo,
@@ -314,13 +318,13 @@ export const verifyPayment = async (req, res) => {
     let dbShipment = null;
     if (bookingResult.success) {
       const shipmentInsertQuery = `
-        INSERT INTO shipments (order_id, fship_order_id, fship_api_order_id, awb_code, courier_name, tracking_url, status)
+        INSERT INTO shipments (order_id, shiprocket_order_id, shiprocket_shipment_id, awb_code, courier_name, tracking_url, status)
         VALUES (?, ?, ?, ?, ?, ?, 'Booked')
       `;
       const [shipResult] = await pool.query(shipmentInsertQuery, [
         order_id,
-        bookingResult.fshipOrderId,
-        bookingResult.fshipApiOrderId,
+        bookingResult.shiprocketOrderId,
+        bookingResult.shiprocketShipmentId,
         bookingResult.awbCode,
         bookingResult.courierName,
         bookingResult.trackingUrl
@@ -337,15 +341,15 @@ export const verifyPayment = async (req, res) => {
       // Update order status to Processing (with shipment booked)
       await pool.query('UPDATE orders SET status = ? WHERE id = ?', ['Processing', order_id]);
     } else {
-      // Create a pending/failed shipment record in DB so administrators can book it later manually
-      const fallbackAwb = `FS-FAIL-${order_id}`;
+      // Create a pending/failed shipment record so admin can book manually
+      const fallbackAwb = `SR-FAIL-${order_id}`;
       const shipmentInsertQuery = `
-        INSERT INTO shipments (order_id, fship_order_id, fship_api_order_id, awb_code, courier_name, tracking_url, status)
-        VALUES (?, ?, ?, ?, 'Fship Shipping Aggregator', '', 'Failed')
+        INSERT INTO shipments (order_id, shiprocket_order_id, shiprocket_shipment_id, awb_code, courier_name, tracking_url, status)
+        VALUES (?, ?, ?, ?, 'Shiprocket', '', 'Failed')
       `;
       const [shipResult] = await pool.query(shipmentInsertQuery, [
         order_id,
-        `FS-FAIL-${order_id}`,
+        `SR-FAIL-${order_id}`,
         null,
         fallbackAwb,
       ]);
@@ -359,6 +363,34 @@ export const verifyPayment = async (req, res) => {
         error: bookingResult.error || 'Shipping API offline'
       };
     }
+
+    // 9. Send Email Receipt + WhatsApp confirmation (non-blocking — don't fail order if this fails)
+    const [userInfo] = await pool.query('SELECT name, email, phone FROM users WHERE id = ?', [userId]);
+    const customer = userInfo[0] || {};
+
+    const [fullOrderItems] = await pool.query(
+      'SELECT oi.quantity, oi.price, p.title FROM order_items oi JOIN products p ON oi.product_id = p.product_id WHERE oi.order_id = ?',
+      [order_id]
+    );
+
+    const [fullAddress] = await pool.query('SELECT * FROM shipping_address WHERE id = ?', [order.address_id]);
+    const addr = fullAddress[0] || {};
+
+    // Fire-and-forget — do not await so the response returns immediately
+    sendOrderConfirmationEmail({
+      order: { id: order_id, total_amount: order.total_amount, created_at: new Date() },
+      customer: { name: customer.name || addr.full_name, email: customer.email },
+      items: fullOrderItems,
+      address: addr
+    }).catch(e => console.error('[Email] Silent error:', e.message));
+
+    sendOrderConfirmationWhatsApp({
+      orderId: order_id,
+      customerName: customer.name || addr.full_name,
+      customerPhone: addr.phone || customer.phone,
+      totalAmount: order.total_amount,
+      items: fullOrderItems
+    }).catch(e => console.error('[WhatsApp] Silent error:', e.message));
 
     return res.status(200).json({
       success: true,

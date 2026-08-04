@@ -6,7 +6,7 @@ const CartContext = createContext();
 export const useCart = () => useContext(CartContext);
 
 export const CartProvider = ({ children }) => {
-  const { isAuthenticated, getAccessTokenSilently, user } = useAuth0();
+  const { isAuthenticated, getAccessTokenSilently, loginWithRedirect, user } = useAuth0();
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -17,33 +17,16 @@ export const CartProvider = ({ children }) => {
     if (isAuthenticated) {
       syncAndFetchDBCart();
     } else {
-      // Load guest cart
-      const guestCart = JSON.parse(localStorage.getItem('mindfuels_guest_cart') || '[]');
-      setCartItems(guestCart);
+      // Clear cart for non-logged-in users — no guest cart
+      setCartItems([]);
     }
   }, [isAuthenticated, user]);
 
-  // Sync guest cart to DB upon login and retrieve updated cart
+  // Sync profile and fetch DB cart on login
   const syncAndFetchDBCart = async () => {
     setLoading(true);
     try {
       const token = await getAccessTokenSilently();
-      const guestCart = JSON.parse(localStorage.getItem('mindfuels_guest_cart') || '[]');
-
-      if (guestCart.length > 0) {
-        console.log('Merging guest cart into database...');
-        // Merge guest cart to DB
-        await fetch(`${API_URL}/api/cart/merge`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ items: guestCart })
-        });
-        // Clear local guest cart
-        localStorage.removeItem('mindfuels_guest_cart');
-      }
 
       // Synchronize Auth0 profile details with DB users table
       if (user) {
@@ -65,9 +48,6 @@ export const CartProvider = ({ children }) => {
       await fetchDBCart(token);
     } catch (error) {
       console.error('Error synchronizing database cart:', error);
-      // Fallback: load guest cart if request fails
-      const guestCart = JSON.parse(localStorage.getItem('mindfuels_guest_cart') || '[]');
-      setCartItems(guestCart);
     } finally {
       setLoading(false);
     }
@@ -88,62 +68,32 @@ export const CartProvider = ({ children }) => {
   };
 
   const addToCart = async (product, quantity = 1) => {
-    if (isAuthenticated) {
-      try {
-        const token = await getAccessTokenSilently();
-        const response = await fetch(`${API_URL}/api/cart`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ product_id: product.product_id, quantity })
-        });
-        
-        if (!response.ok) {
-          const errData = await response.json();
-          throw new Error(errData.error || 'Failed to add item to database cart');
-        }
+    if (!isAuthenticated) {
+      // Redirect to login — no guest cart
+      loginWithRedirect();
+      return;
+    }
 
-        await fetchDBCart(token);
-      } catch (error) {
-        console.error(error);
-        alert(error.message);
-      }
-    } else {
-      // Guest local storage logic
-      const guestCart = JSON.parse(localStorage.getItem('mindfuels_guest_cart') || '[]');
-      const existingItemIndex = guestCart.findIndex(item => item.product_id === product.product_id);
-
-      if (existingItemIndex > -1) {
-        const newQty = guestCart[existingItemIndex].quantity + quantity;
-        if (newQty > product.stock_qty) {
-          alert(`Cannot add requested quantity. Available stock: ${product.stock_qty}.`);
-          return;
-        }
-        guestCart[existingItemIndex].quantity = newQty;
-      } else {
-        if (quantity > product.stock_qty) {
-          alert(`Cannot add requested quantity. Available stock: ${product.stock_qty}.`);
-          return;
-        }
-        guestCart.push({
-          product_id: product.product_id,
-          quantity,
-          title: product.title,
-          sp: product.sp,
-          mrp: product.mrp,
-          stock_qty: product.stock_qty,
-          image1: product.image1,
-          weight: product.weight,
-          length: product.length,
-          width: product.width,
-          height: product.height
-        });
+    try {
+      const token = await getAccessTokenSilently();
+      const response = await fetch(`${API_URL}/api/cart`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ product_id: product.product_id, quantity })
+      });
+      
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || 'Failed to add item to cart');
       }
 
-      localStorage.setItem('mindfuels_guest_cart', JSON.stringify(guestCart));
-      setCartItems([...guestCart]);
+      await fetchDBCart(token);
+    } catch (error) {
+      console.error(error);
+      alert(error.message);
     }
   };
 
@@ -153,70 +103,50 @@ export const CartProvider = ({ children }) => {
       return;
     }
 
-    if (isAuthenticated) {
-      try {
-        const token = await getAccessTokenSilently();
-        const response = await fetch(`${API_URL}/api/cart/${productId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ quantity: newQty })
-        });
+    if (!isAuthenticated) return;
 
-        if (!response.ok) {
-          const errData = await response.json();
-          throw new Error(errData.error || 'Failed to update quantity');
-        }
+    try {
+      const token = await getAccessTokenSilently();
+      const response = await fetch(`${API_URL}/api/cart/${productId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ quantity: newQty })
+      });
 
-        await fetchDBCart(token);
-      } catch (error) {
-        console.error(error);
-        alert(error.message);
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.error || 'Failed to update quantity');
       }
-    } else {
-      // Guest local storage update
-      const guestCart = JSON.parse(localStorage.getItem('mindfuels_guest_cart') || '[]');
-      const itemIndex = guestCart.findIndex(item => item.product_id === productId);
 
-      if (itemIndex > -1) {
-        if (newQty > guestCart[itemIndex].stock_qty) {
-          alert(`Cannot update quantity. Available stock: ${guestCart[itemIndex].stock_qty}.`);
-          return;
-        }
-        guestCart[itemIndex].quantity = newQty;
-        localStorage.setItem('mindfuels_guest_cart', JSON.stringify(guestCart));
-        setCartItems([...guestCart]);
-      }
+      await fetchDBCart(token);
+    } catch (error) {
+      console.error(error);
+      alert(error.message);
     }
   };
 
   const removeFromCart = async (productId) => {
-    if (isAuthenticated) {
-      try {
-        const token = await getAccessTokenSilently();
-        const response = await fetch(`${API_URL}/api/cart/${productId}`, {
-          method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
+    if (!isAuthenticated) return;
 
-        if (response.ok) {
-          await fetchDBCart(token);
-        }
-      } catch (error) {
-        console.error('Failed to delete item from DB cart:', error);
+    try {
+      const token = await getAccessTokenSilently();
+      const response = await fetch(`${API_URL}/api/cart/${productId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        await fetchDBCart(token);
       }
-    } else {
-      const guestCart = JSON.parse(localStorage.getItem('mindfuels_guest_cart') || '[]');
-      const filteredCart = guestCart.filter(item => item.product_id !== productId);
-      localStorage.setItem('mindfuels_guest_cart', JSON.stringify(filteredCart));
-      setCartItems(filteredCart);
+    } catch (error) {
+      console.error('Failed to delete item from DB cart:', error);
     }
   };
 
   const clearLocalCartOnly = () => {
-    localStorage.removeItem('mindfuels_guest_cart');
     setCartItems([]);
   };
 

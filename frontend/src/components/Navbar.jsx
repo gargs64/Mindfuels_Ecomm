@@ -51,7 +51,7 @@ export default function Navbar({ currentPath, navigate }) {
         top: 0,
         left: 0,
         right: 0,
-        height: '80px',
+        height: '60px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -60,9 +60,8 @@ export default function Navbar({ currentPath, navigate }) {
         fontFamily: 'var(--font-display)'
       }}>
         {/* Brand Logo */}
-        <div onClick={() => navigate('/')} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-          <img src="/photos/logo.png" alt="Mindfuels Logo" style={{ height: '48px', objectFit: 'contain' }} />
-          <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--primary)', letterSpacing: '-0.5px' }}>Mindfuels</span>
+        <div onClick={() => navigate('/')} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+          <img src="/photos/logo.png" alt="Mindfuels Logo" style={{ height: '36px', objectFit: 'contain' }} />
         </div>
 
         {/* Center Links (Desktop only) */}
@@ -91,7 +90,7 @@ export default function Navbar({ currentPath, navigate }) {
               <div onClick={() => handleDropdownNavigate('interest', 'Calligraphy & Cursive')}>Calligraphy & Cursive</div>
               <div onClick={() => handleDropdownNavigate('interest', 'Art & Creativity')}>Art & Creativity</div>
               <div onClick={() => handleDropdownNavigate('interest', 'Phonetics')}>Phonetics</div>
-              <div onClick={() => handleDropdownNavigate('interest', 'All Subject Activity Books')}>All Subject Activity Books</div>
+              <div onClick={() => handleDropdownNavigate('interest', 'All-Subject Activity Books')}>All-Subject Activity Books</div>
             </div>
           </div>
 
@@ -141,7 +140,12 @@ export default function Navbar({ currentPath, navigate }) {
               }}>
                 <h4 style={{ marginBottom: '12px', fontSize: '1rem', borderBottom: '1px solid var(--border)', paddingBottom: '8px' }}>My Wishlist</h4>
                 {wishlistItems.length === 0 ? (
-                  <p style={{ fontSize: '0.85rem', color: 'var(--dark-light)', textAlign: 'center', padding: '12px 0' }}>Wishlist is empty</p>
+                  <div style={{ textAlign: 'center', padding: '24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--dark-light)" strokeWidth="1.5" style={{ opacity: 0.4 }}>
+                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                    </svg>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--dark-light)', margin: 0 }}>Your Wishlist is Empty</p>
+                  </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '280px', overflowY: 'auto' }}>
                     {wishlistItems.map(item => (
@@ -192,10 +196,10 @@ export default function Navbar({ currentPath, navigate }) {
           <div style={{ position: 'relative' }}>
             {isAuthenticated ? (
               <button onClick={() => setAccountMenuOpen(!accountMenuOpen)} style={{
-                width: '38px', height: '38px', borderRadius: '50%', background: 'var(--primary)', color: '#fff', fontSize: '1rem',
+                width: '38px', height: '38px', borderRadius: '50%', background: '#F0AA8D', color: '#fff', fontSize: '1rem',
                 fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid rgba(255,255,255,0.8)'
               }}>
-                {getUserInitials()}
+                {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
               </button>
             ) : (
               <button onClick={() => loginWithRedirect()} className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
@@ -233,7 +237,7 @@ export default function Navbar({ currentPath, navigate }) {
       {/* Slide-In Mobile Drawer */}
       {mobileMenuOpen && (
         <div className="mobile-drawer glass-panel" style={{
-          position: 'fixed', top: '80px', left: 0, right: 0, bottom: 0, background: 'rgba(255,255,255,0.95)',
+          position: 'fixed', top: '60px', left: 0, right: 0, bottom: 0, background: 'rgba(255,255,255,0.95)',
           padding: '24px', zIndex: 999, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px'
         }}>
           <div onClick={() => { navigate('/products'); setMobileMenuOpen(false); }} style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>All Products</div>

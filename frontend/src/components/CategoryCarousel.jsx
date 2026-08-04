@@ -52,14 +52,8 @@ export default function CategoryCarousel({ navigate }) {
 
   return (
     <section className="container" style={{ padding: '60px 20px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '30px' }}>
-        <div>
-          <span className="badge badge-discount" style={{ background: 'rgba(74, 144, 226, 0.1)', color: 'var(--secondary)', marginBottom: '8px' }}>
-            Exploration Hub
-          </span>
-          <h2 style={{ fontSize: '2rem', fontWeight: 800 }}>Shop by Category</h2>
-        </div>
-        <span style={{ fontSize: '0.85rem', color: 'var(--secondary)', fontWeight: 600 }}>Swipe to Browse ➔</span>
+      <div style={{ marginBottom: '30px' }}>
+        <h2 style={{ fontSize: '2rem', fontWeight: 800 }}>Shop by Category</h2>
       </div>
 
       {/* 6 Category Items Row */}

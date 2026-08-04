@@ -1,5 +1,5 @@
 import express from 'express';
-import { getAddresses, addAddress } from '../controllers/addressController.js';
+import { getAddresses, addAddress, deleteAddress } from '../controllers/addressController.js';
 import { checkJwt, ensureUser } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -8,5 +8,6 @@ router.use(checkJwt, ensureUser);
 
 router.get('/', getAddresses);
 router.post('/', addAddress);
+router.delete('/:id', deleteAddress);
 
 export default router;

@@ -86,3 +86,28 @@ export const addAddress = async (req, res) => {
     connection.release();
   }
 };
+
+/**
+ * Delete a shipping address by ID (only if it belongs to the current user).
+ */
+export const deleteAddress = async (req, res) => {
+  try {
+    const userId = req.userId;
+    const addressId = req.params.id;
+
+    const [result] = await pool.query(
+      'DELETE FROM shipping_address WHERE id = ? AND user_id = ?',
+      [addressId, userId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Address not found or unauthorized' });
+    }
+
+    return res.status(200).json({ message: 'Address deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting address:', error);
+    return res.status(500).json({ error: 'Failed to delete address' });
+  }
+};
+

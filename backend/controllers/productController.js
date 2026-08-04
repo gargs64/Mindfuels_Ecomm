@@ -3,6 +3,13 @@ import { syncProducts } from '../services/googleSheetsService.js';
 
 /**
  * Get list of products with advanced filters, search, and pagination.
+ *
+ * Tag schema in DB:
+ *   tag1 = specific category value  e.g. "Art & Creativity", "All-in-One", "Story Books"
+ *   tag2 = category type            e.g. "Shop By Interest", "Shop By Subject"
+ *   tag3 = age/class group          e.g. "Lower Primary (Class 1 & 2), Upper Primary (Class 3 & 4)"
+ *          NOTE: tag3 can contain COMMA-SEPARATED multiple class values, so we must use LIKE.
+ *          NOTE: tag3 sometimes has double spaces (e.g. "U.K.G &  L.K.G"), so we normalize via REPLACE.
  */
 export const getProducts = async (req, res) => {
   try {
@@ -15,25 +22,42 @@ export const getProducts = async (req, res) => {
     let baseQuery = 'FROM products WHERE 1=1';
     const queryParams = [];
 
-    // Helper to generate tag-matching clause
-    // Since tags (tag1, tag2, tag3) are used interchangeably, we match filters in any tag
+    /**
+     * Applies a space-normalized check across tag1, tag2, and tag3.
+     * This handles cases where tags are placed in different columns
+     * or contain double spacing (e.g. "Science &  Computer" or "U.K.G &  L.K.G").
+     */
     const applyTagFilter = (filterValue) => {
-      const items = filterValue.split(',').map(item => item.trim()).filter(Boolean);
+      const items = filterValue.split(',').map(i => i.trim()).filter(Boolean);
       if (items.length === 0) return '';
       
-      // Matches items in tag1, tag2, or tag3 using IN operator
-      queryParams.push(items, items, items);
-      return ' AND (tag1 IN (?) OR tag2 IN (?) OR tag3 IN (?))';
+      const conditions = items.map(() => {
+        return `(
+          REPLACE(IFNULL(tag1, ''), '  ', ' ') LIKE ? OR
+          REPLACE(IFNULL(tag2, ''), '  ', ' ') LIKE ? OR
+          REPLACE(IFNULL(tag3, ''), '  ', ' ') LIKE ?
+        )`;
+      }).join(' OR ');
+
+      items.forEach(item => {
+        const normalized = item.replace(/\s+/g, ' ');
+        queryParams.push(`%${normalized}%`, `%${normalized}%`, `%${normalized}%`);
+      });
+
+      return ` AND (${conditions})`;
     };
 
+    // Class filter
     if (classFilter) {
       baseQuery += applyTagFilter(classFilter);
     }
 
+    // Interest filter
     if (interest) {
       baseQuery += applyTagFilter(interest);
     }
 
+    // Subject filter
     if (subject) {
       baseQuery += applyTagFilter(subject);
     }
@@ -50,7 +74,6 @@ export const getProducts = async (req, res) => {
 
     // 2. Fetch paginated records
     const dataQuery = `SELECT * ${baseQuery} ORDER BY created_at DESC LIMIT ? OFFSET ?`;
-    // Add pagination values
     queryParams.push(parsedLimit, offset);
     const [products] = await pool.query(dataQuery, queryParams);
 

@@ -108,10 +108,7 @@ export default function ProductCard({ product, onClick }) {
 
       {/* Book Metadata details */}
       <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', flexGrow: 1, gap: '8px' }}>
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-          {product.tag1 && <span className="badge badge-stock" style={{ fontSize: '0.65rem' }}>{product.tag1}</span>}
-          {product.tag2 && <span className="badge badge-stock" style={{ fontSize: '0.65rem' }}>{product.tag2}</span>}
-        </div>
+
 
         <h4 style={{
           fontSize: '0.95rem',

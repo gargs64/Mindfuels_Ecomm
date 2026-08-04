@@ -349,7 +349,32 @@ export default function Cart({ navigate }) {
           </div>
         </div>
 
-        <button onClick={() => navigate('/products')} className="btn btn-primary" style={{ padding: '14px 30px', marginTop: '10px' }}>
+        {/* Option 3: WhatsApp Click-to-Chat Button */}
+        <a
+          href={`https://wa.me/919811507332?text=${encodeURIComponent(`Hi Mindfuels! I just placed Order #${confirmedOrderDetails.order_id}. Please confirm my order details.`)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '10px',
+            width: '100%',
+            padding: '14px 24px',
+            borderRadius: '12px',
+            background: '#25D366',
+            color: '#FFFFFF',
+            fontWeight: 700,
+            fontSize: '1rem',
+            textDecoration: 'none',
+            boxShadow: '0 4px 12px rgba(37, 211, 102, 0.25)',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          <span>💬 Get Order Confirmation on WhatsApp</span>
+        </a>
+
+        <button onClick={() => navigate('/products')} className="btn btn-secondary" style={{ padding: '12px 30px', width: '100%' }}>
           Continue Shopping
         </button>
       </div>
@@ -368,11 +393,31 @@ export default function Cart({ navigate }) {
   // Empty cart display
   if (cartItems.length === 0) {
     return (
-      <div className="container" style={{ padding: '80px 20px', textAlign: 'center', minHeight: '60vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '16px' }}>
-        <h2>Your Shopping Cart is Empty</h2>
-        <p style={{ color: 'var(--dark-light)' }}>Add curriculum workbooks and activity sheets to get started.</p>
-        <button onClick={() => navigate('/products')} className="btn btn-primary">
-          Browse Catalog
+      <div className="container fade-in" style={{ padding: '80px 20px', textAlign: 'center', minHeight: '60vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '20px' }}>
+        <div style={{
+          width: '120px',
+          height: '120px',
+          borderRadius: '50%',
+          background: 'rgba(255, 90, 54, 0.05)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: 'var(--primary)',
+          boxShadow: 'inset 0 4px 10px rgba(0,0,0,0.02)',
+          marginBottom: '8px'
+        }}>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="9" cy="21" r="1"></circle>
+            <circle cx="20" cy="21" r="1"></circle>
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+          </svg>
+        </div>
+        <h2 style={{ fontSize: '1.8rem', fontWeight: 800 }}>Your Shopping Cart is Empty</h2>
+        <p style={{ color: 'var(--dark-light)', maxWidth: '400px', fontSize: '0.95rem', lineHeight: '1.6' }}>
+          Explore our school-trusted collections and fuel your child's imagination with premium educational books.
+        </p>
+        <button onClick={() => navigate('/products')} className="btn btn-primary" style={{ padding: '14px 32px', marginTop: '8px' }}>
+          Browse Book Catalog
         </button>
       </div>
     );
@@ -457,6 +502,9 @@ export default function Cart({ navigate }) {
                 onChange={(e) => setFullName(e.target.value)}
                 style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border)', marginTop: '4px' }}
               />
+              {fullName && fullName.trim().length < 3 && (
+                <div style={{ color: 'var(--error)', fontSize: '0.75rem', marginTop: '2px' }}>Name must be at least 3 characters</div>
+              )}
             </div>
 
             {/* Input: Phone */}
@@ -502,6 +550,9 @@ export default function Cart({ navigate }) {
                 onChange={(e) => setAddressLine1(e.target.value)}
                 style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border)', marginTop: '4px' }}
               />
+              {addressLine1 && addressLine1.trim().length < 5 && (
+                <div style={{ color: 'var(--error)', fontSize: '0.75rem', marginTop: '2px' }}>Address must be at least 5 characters</div>
+              )}
             </div>
 
             {/* Input: Address Line 2 */}
@@ -564,11 +615,18 @@ export default function Cart({ navigate }) {
               </div>
             </div>
 
+            {/* Validation warning hint */}
+            {isAuthenticated && !isFormValid && (
+              <div style={{ color: 'var(--error)', fontSize: '0.8rem', textAlign: 'center', background: 'rgba(239, 68, 68, 0.05)', padding: '8px', borderRadius: '8px' }}>
+                Please fill in all required fields (*) correctly.
+              </div>
+            )}
+
             {/* Submit checkout Pay Button */}
             <button
               type="submit"
-              disabled={checkoutLoading || (!isAuthenticated ? false : !isFormValid)}
-              className={`btn btn-primary ${checkoutLoading || (isAuthenticated && !isFormValid) ? 'btn-disabled' : ''}`}
+              disabled={checkoutLoading}
+              className={`btn btn-primary ${checkoutLoading ? 'btn-disabled' : ''}`}
               style={{ width: '100%', padding: '14px', fontSize: '1rem', marginTop: '10px' }}
             >
               {checkoutLoading ? (

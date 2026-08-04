@@ -47,6 +47,28 @@ function MainApp() {
     return () => window.removeEventListener('popstate', handleLocationChange);
   }, []);
 
+  // Dynamic Page Title SEO update
+  useEffect(() => {
+    switch (currentPath) {
+      case '/products':
+        document.title = 'All Products & Workbooks | Mindfuels';
+        break;
+      case '/cart':
+        document.title = 'My Shopping Cart | Mindfuels';
+        break;
+      case '/profile':
+        document.title = 'My Profile & Orders | Mindfuels';
+        break;
+      case '/legal_pages':
+        document.title = 'Policies & Terms | Mindfuels';
+        break;
+      case '/':
+      default:
+        document.title = "Mindfuels | Trustworthy Children's Books & Activity Workbooks";
+        break;
+    }
+  }, [currentPath]);
+
   // Helper function to navigate Programmatically without page reloads
   const navigate = (path, search = '') => {
     const targetUrl = path + (search ? `?${search}` : '');
@@ -103,7 +125,7 @@ function MainApp() {
     <div className="app-layout" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <Navbar currentPath={currentPath} navigate={navigate} />
       
-      <main style={{ flex: '1 0 auto', paddingTop: '80px' }}>
+      <main style={{ flex: '1 0 auto', paddingTop: '60px' }}>
         {renderPage()}
       </main>
 

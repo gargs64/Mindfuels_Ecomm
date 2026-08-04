@@ -305,3 +305,59 @@ img, video {
     grid-template-columns: 1fr; /* fallback for extremely narrow screens */
   }
 }
+
+/* Mobile Viewport Style Overrides */
+@media (max-width: 768px) {
+  /* Hero text and container adjustments */
+  .hero-banner h1 {
+    font-size: 2.1rem !important;
+    line-height: 1.2 !important;
+  }
+  .hero-banner p {
+    font-size: 0.95rem !important;
+    margin-bottom: 20px !important;
+  }
+  .hero-banner {
+    min-height: 380px !important;
+    padding: 40px 16px !important;
+  }
+
+  /* Cart Layout collapse */
+  .cart-grid-layout {
+    grid-template-columns: 1fr !important;
+    gap: 24px !important;
+  }
+
+  /* Profile layout collapse */
+  .profile-order-split {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  /* Legal layout collapse */
+  .legal-layout-split {
+    flex-direction: column !important;
+    gap: 24px !important;
+  }
+  .legal-layout-split .sticky-nav {
+    position: relative !important;
+    top: 0 !important;
+    width: 100% !important;
+    flex: none !important;
+  }
+
+  /* Hide carousel arrow buttons extending off-screen to prevent mobile overflow scrolling */
+  .carousel-btn {
+    display: none !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-banner h1 {
+    font-size: 1.7rem !important;
+  }
+  .hero-banner p {
+    font-size: 0.9rem !important;
+  }
+}
+

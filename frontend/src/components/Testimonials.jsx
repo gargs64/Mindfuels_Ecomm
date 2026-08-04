@@ -1,149 +1,207 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+
+function TestimonialCard({ videoSrc, isActive, onToggleActive }) {
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    if (!videoRef.current) return;
+    if (isActive) {
+      videoRef.current.play().catch(err => {
+        console.log('Play failed/blocked:', err);
+      });
+    } else {
+      videoRef.current.pause();
+    }
+  }, [isActive]);
+
+  return (
+    <div 
+      className="glass-panel testimonial-card" 
+      style={{
+        flex: '0 0 240px',
+        height: '426px',
+        borderRadius: '16px',
+        overflow: 'hidden',
+        position: 'relative',
+        boxShadow: 'var(--shadow-sm)',
+        border: '1px solid var(--border)',
+        background: '#000',
+        cursor: 'pointer'
+      }} 
+      onClick={onToggleActive}
+    >
+      <video
+        ref={videoRef}
+        src={videoSrc}
+        preload="metadata"
+        playsInline
+        loop
+        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+      />
+      
+      {!isActive && (
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.15)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'all 0.3s ease'
+        }} className="play-overlay">
+          <div className="play-circle" style={{
+            width: '48px',
+            height: '48px',
+            borderRadius: '50%',
+            background: 'rgba(255, 255, 255, 0.95)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)',
+            color: 'var(--primary)',
+            transition: 'all 0.2s ease'
+          }}>
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24" style={{ marginLeft: '2px' }}>
+              <path d="M8 5v14l11-7z"></path>
+            </svg>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Testimonials() {
-  const [playingVideoIdx, setPlayingVideoIdx] = useState(null);
+  const [activeIdx, setActiveIdx] = useState(null);
+  const scrollRef = useRef(null);
 
   const testimonials = [
-    { video: '/testimonial_videos/vid1.mp4', caption: '"My kids love the storybooks and moral lessons!"', author: 'Aditi S., Parent of 5yo' },
-    { video: '/testimonial_videos/vid2.mp4', caption: '"The worksheets keep my daughter engaged for hours!"', author: 'Rajesh K., Parent of 7yo' },
-    { video: '/testimonial_videos/vid3.mp4', caption: '"Highly recommended by our elementary school teachers."', author: 'Principal, Oakridge International' },
-    { video: '/testimonial_videos/vid4.mp4', caption: '"Phonetics exercises are extremely clear and helpful."', author: 'Meera J., Parent of 4yo' },
-    { video: '/testimonial_videos/vid5.mp4', caption: '"Mindfuels GK books helped my son build a strong foundation."', author: 'Devendra V., Parent of 8yo' },
-    { video: '/testimonial_videos/vid6.mp4', caption: '"Creative illustrations make reading so much fun."', author: 'Sneha P., Parent of 6yo' },
-    { video: '/testimonial_videos/vid7.mp4', caption: '"Activity books are the best screen-free alternative!"', author: 'Vikram A., Parent of 9yo' },
-    { video: '/testimonial_videos/vid8.mp4', caption: '"Perfect gift for young readers. Excellent book quality."', author: 'Pooja T., Parent of 10yo' },
-    { video: '/testimonial_videos/vid9.mp4', caption: '"Highly interactive and curriculum-focused content."', author: 'Ananya S., Primary School Teacher' },
-    { video: '/testimonial_videos/vid10.mp4', caption: '"The cursive writing worksheets helped improve handwriting fast."', author: 'Harish M., Parent of 7yo' },
-    { video: '/testimonial_videos/vid11.mp4', caption: '"Super fast delivery and great customer support!"', author: 'Neha R., Teacher at Sunshine Academy' }
+    { video: '/testimonial_videos/vid1.mp4' },
+    { video: '/testimonial_videos/vid2.mp4' },
+    { video: '/testimonial_videos/vid3.mp4' },
+    { video: '/testimonial_videos/vid4.mp4' },
+    { video: '/testimonial_videos/vid5.mp4' },
+    { video: '/testimonial_videos/vid6.mp4' },
+    { video: '/testimonial_videos/vid7.mp4' },
+    { video: '/testimonial_videos/vid8.mp4' },
+    { video: '/testimonial_videos/vid9.mp4' },
+    { video: '/testimonial_videos/vid10.mp4' },
+    { video: '/testimonial_videos/vid11.mp4' }
   ];
+
+  const scroll = (direction) => {
+    if (scrollRef.current) {
+      const { scrollLeft } = scrollRef.current;
+      const scrollAmount = 260; // card width (240) + gap (20)
+      scrollRef.current.scrollTo({
+        left: direction === 'left' ? scrollLeft - scrollAmount : scrollLeft + scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
+
+  const handleToggle = (idx) => {
+    if (activeIdx === idx) {
+      setActiveIdx(null); // Pause if clicked again
+    } else {
+      setActiveIdx(idx); // Play clicked, pauses any other active video
+    }
+  };
 
   return (
     <section style={{ background: '#FFFDF9', padding: '60px 0', borderTop: '1px solid var(--border)' }}>
       <div className="container" style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
         
         <div style={{ textAlign: 'center' }}>
-          <span className="badge badge-discount" style={{ background: 'rgba(255, 90, 54, 0.1)', color: 'var(--primary)', marginBottom: '8px' }}>
-            User Reviews
-          </span>
           <h2 style={{ fontSize: '2rem', fontWeight: 800 }}>Loved by Parents & Teachers</h2>
           <p style={{ color: 'var(--dark-light)', marginTop: '8px', maxWidth: '600px', margin: '8px auto 0' }}>
             Hear directly from the educators and parents who trust Mindfuels books to power children's early educational journeys.
           </p>
         </div>
 
-        {/* Grid of 11 Testimonials */}
-        <div className="testimonials-grid" style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-          gap: '24px'
-        }}>
-          {testimonials.map((t, idx) => {
-            const isPlaying = playingVideoIdx === idx;
-            
-            return (
-              <div key={idx} className="glass-panel" style={{
-                borderRadius: '16px',
-                overflow: 'hidden',
-                display: 'flex',
-                flexDirection: 'column',
-                boxShadow: 'var(--shadow-sm)',
-                border: '1px solid var(--border)'
-              }}>
-                
-                {/* Video / Thumbnail Container */}
-                <div style={{
-                  position: 'relative',
-                  width: '100%',
-                  aspectRatio: '16/9',
-                  background: 'linear-gradient(135deg, #1E293B 0%, #0F172A 100%)',
-                  overflow: 'hidden',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  {isPlaying ? (
-                    <video
-                      src={t.video}
-                      controls
-                      autoPlay
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                  ) : (
-                    // Lazy-loading video thumbnail overlay
-                    <div
-                      onClick={() => setPlayingVideoIdx(idx)}
-                      style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: 'linear-gradient(135deg, rgba(255, 90, 54, 0.9) 0%, rgba(74, 144, 226, 0.9) 100%)',
-                        color: '#ffffff',
-                        transition: 'opacity 0.3s'
-                      }}
-                      className="thumbnail-overlay"
-                    >
-                      {/* Play Button Icon */}
-                      <div className="flex-center play-button-hover" style={{
-                        width: '56px',
-                        height: '56px',
-                        borderRadius: '50%',
-                        background: 'rgba(255, 255, 255, 0.95)',
-                        color: 'var(--primary)',
-                        boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
-                        marginBottom: '10px',
-                        transition: 'transform 0.2s'
-                      }}>
-                        <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M8 5v14l11-7z"></path>
-                        </svg>
-                      </div>
-                      <span style={{ fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase' }}>
-                        Click to Play Review
-                      </span>
-                    </div>
-                  )}
-                </div>
+        {/* Carousel Wrapper */}
+        <div style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center' }}>
+          {/* Left Button */}
+          <button 
+            onClick={() => scroll('left')} 
+            className="carousel-btn" 
+            style={{ left: '-22px' }}
+            aria-label="Previous testimonials"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+          </button>
 
-                {/* Caption / Author info */}
-                <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px', flexGrow: 1, justifyContent: 'center' }}>
-                  <p style={{
-                    fontSize: '0.9rem',
-                    fontStyle: 'italic',
-                    fontWeight: 500,
-                    lineHeight: '1.4',
-                    color: 'var(--dark)'
-                  }}>
-                    {t.caption}
-                  </p>
-                  <p style={{
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                    color: 'var(--primary)',
-                    alignSelf: 'flex-end',
-                    marginTop: 'auto'
-                  }}>
-                    — {t.author}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
+          {/* Horizontal Scroll Row */}
+          <div 
+            ref={scrollRef} 
+            className="testimonials-scroll-row" 
+            style={{
+              display: 'flex',
+              gap: '20px',
+              overflowX: 'auto',
+              scrollBehavior: 'smooth',
+              width: '100%',
+              padding: '10px 0',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none'
+            }}
+          >
+            {testimonials.map((t, idx) => (
+              <TestimonialCard
+                key={idx}
+                videoSrc={t.video}
+                isActive={activeIdx === idx}
+                onToggleActive={() => handleToggle(idx)}
+              />
+            ))}
+          </div>
+
+          {/* Right Button */}
+          <button 
+            onClick={() => scroll('right')} 
+            className="carousel-btn" 
+            style={{ right: '-22px' }}
+            aria-label="Next testimonials"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6"></polyline>
+            </svg>
+          </button>
         </div>
       </div>
 
       <style>{`
-        .thumbnail-overlay:hover {
-          opacity: 0.95;
+        .testimonials-scroll-row::-webkit-scrollbar {
+          display: none;
         }
-        .thumbnail-overlay:hover .play-button-hover {
-          transform: scale(1.15);
+        .carousel-btn {
+          position: absolute;
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          background: #ffffff;
+          border: 1px solid var(--border);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          z-index: 10;
+          color: var(--dark);
+          transition: all 0.2s;
+        }
+        .carousel-btn:hover {
+          background: var(--light);
+          transform: scale(1.05);
+          color: var(--primary);
+        }
+        .testimonial-card:hover .play-circle {
+          transform: scale(1.1);
         }
       `}</style>
     </section>
