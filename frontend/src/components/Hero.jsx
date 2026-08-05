@@ -28,6 +28,24 @@ export default function Hero({ navigate }) {
         alignItems: 'center',
         padding: '0 5%'
       }}>
+        <style>{`
+          @media (max-width: 768px) {
+            .hero-banner {
+              min-height: 180px !important;
+              max-height: 260px !important;
+              aspect-ratio: unset !important;
+              background-size: contain !important;
+              background-position: center center !important;
+              background-color: #ffffff !important;
+            }
+          }
+          @media (max-width: 480px) {
+            .hero-banner {
+              min-height: 150px !important;
+              max-height: 220px !important;
+            }
+          }
+        `}</style>
       </div>
 
       {/* Infinite scrolling Trust Bar Marquee */}

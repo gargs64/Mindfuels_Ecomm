@@ -31,7 +31,7 @@ export default function TrustedFavorites({ onProductClick }) {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
         <div className="spinner"></div>
       </div>
     );
@@ -45,7 +45,7 @@ export default function TrustedFavorites({ onProductClick }) {
   const parentsChoiceProducts = products.slice(10, 20);
 
   return (
-    <section className="container" style={{ padding: '60px 20px', display: 'flex', flexDirection: 'column', gap: '50px' }}>
+    <section className="trusted-favorites-section container" style={{ padding: '60px 20px', display: 'flex', flexDirection: 'column', gap: '50px' }}>
       
       {/* 1. Teacher's Recommendation Carousel */}
       {showTeachersRec && teachersRecProducts.length > 0 && (
@@ -113,6 +113,18 @@ export default function TrustedFavorites({ onProductClick }) {
         }
         .carousel-row::-webkit-scrollbar-thumb:hover {
           background-color: #cbd5e1;
+        }
+        @media (max-width: 768px) {
+          .trusted-favorites-section {
+            padding: 30px 16px !important;
+            gap: 30px !important;
+          }
+          .trusted-favorites-section h2 {
+            font-size: 1.4rem !important;
+          }
+          .carousel-item {
+            flex: 0 0 160px !important;
+          }
         }
       `}</style>
     </section>

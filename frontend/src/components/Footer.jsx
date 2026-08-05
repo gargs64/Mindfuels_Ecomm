@@ -108,7 +108,7 @@ export default function Footer({ navigate }) {
           fontSize: '0.8rem'
         }}>
           <div>
-            © {new Date().getFullYear()} Mindfuels Book Publishers. All rights reserved.
+          © {new Date().getFullYear()} Mindfuels Publisher & Distributors. All rights reserved.
           </div>
 
           {/* Payment gateway trust logos */}
@@ -148,6 +148,12 @@ export default function Footer({ navigate }) {
         }
         .footer-social-link:hover svg {
           opacity: 1;
+        }
+        @media (max-width: 768px) {
+          footer {
+            padding-top: 40px !important;
+            padding-bottom: 80px !important; /* Space for mobile bottom nav */
+          }
         }
       `}</style>
     </footer>

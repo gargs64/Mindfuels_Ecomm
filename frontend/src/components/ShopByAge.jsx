@@ -39,7 +39,7 @@ export default function ShopByAge({ navigate }) {
   };
 
   return (
-    <section style={{ background: '#FFFDF9', padding: '60px 0', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
+    <section className="shop-by-age-section" style={{ background: '#FFFDF9', padding: '60px 0', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
       <div className="container text-center" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '40px' }}>
         
         <div style={{ textAlign: 'center' }}>
@@ -110,6 +110,17 @@ export default function ShopByAge({ navigate }) {
         }
         .age-tile-card:hover img {
           transform: scale(1.1);
+        }
+        @media (max-width: 768px) {
+          .shop-by-age-section {
+            padding: 28px 0 32px 0 !important;
+          }
+          .shop-by-age-section h2 {
+            font-size: 1.5rem !important;
+          }
+          .shop-by-age-section p {
+            font-size: 0.85rem !important;
+          }
         }
       `}</style>
     </section>
