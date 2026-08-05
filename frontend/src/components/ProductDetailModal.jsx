@@ -124,6 +124,11 @@ export default function ProductDetailModal({ productId, onClose }) {
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-card fade-in glass-panel" onClick={(e) => e.stopPropagation()}>
         
+        {/* Mobile drag handle */}
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 0 0' }}>
+          <div style={{ width: '40px', height: '4px', borderRadius: '2px', background: 'var(--border)' }}></div>
+        </div>
+
         {/* Close Modal Control Button */}
         <button className="modal-close-btn" onClick={onClose} aria-label="Close Modal">
           ✕
@@ -205,17 +210,16 @@ export default function ProductDetailModal({ productId, onClose }) {
 
 
 
-            {/* Cart Booking Action Area */}
+            {/* Cart Booking Action Area — desktop */}
             {isOutOfStock ? (
-              <div style={{
+              <div className="modal-desktop-cta" style={{
                 background: 'rgba(239, 68, 68, 0.1)', color: 'var(--error)', padding: '14px', borderRadius: '8px',
                 textAlign: 'center', fontWeight: 'bold'
               }}>
                 Temporarily Out of Stock
               </div>
             ) : (
-              <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                
+              <div className="modal-desktop-cta" style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
                 {/* Quantity Counter */}
                 <div style={{ display: 'flex', alignItems: 'center', border: '2px solid var(--border)', borderRadius: '50px', background: '#fff' }}>
                   <button onClick={handleDecrement} style={{ width: '40px', height: '40px', fontSize: '1.2rem', fontWeight: 'bold' }}>−</button>
@@ -227,7 +231,6 @@ export default function ProductDetailModal({ productId, onClose }) {
                   />
                   <button onClick={handleIncrement} style={{ width: '40px', height: '40px', fontSize: '1.2rem', fontWeight: 'bold' }}>+</button>
                 </div>
-
                 {/* Add to Cart button */}
                 <button onClick={handleAddToCartClick} className="btn btn-primary" style={{ flexGrow: 1, padding: '14px 20px' }}>
                   <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
@@ -239,6 +242,44 @@ export default function ProductDetailModal({ productId, onClose }) {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Sticky Mobile Add-to-Cart Bar */}
+        <div className="modal-mobile-cta" style={{
+          display: 'none',
+          position: 'absolute', bottom: 0, left: 0, right: 0,
+          padding: '12px 16px',
+          background: 'rgba(255,255,255,0.97)',
+          backdropFilter: 'blur(12px)',
+          borderTop: '1px solid var(--border)',
+          gap: '12px', alignItems: 'center'
+        }}>
+          {isOutOfStock ? (
+            <div style={{
+              flex: 1, background: 'rgba(239,68,68,0.1)', color: 'var(--error)',
+              padding: '14px', borderRadius: '8px', textAlign: 'center', fontWeight: 'bold'
+            }}>
+              Out of Stock
+            </div>
+          ) : (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', border: '2px solid var(--border)', borderRadius: '50px', background: '#fff' }}>
+                <button onClick={handleDecrement} style={{ width: '42px', height: '42px', fontSize: '1.2rem', fontWeight: 'bold' }}>−</button>
+                <input
+                  type="number" value={quantity} onChange={handleQuantityInputChange}
+                  style={{ width: '44px', textAlign: 'center', border: 'none', fontWeight: 'bold', fontSize: '1rem' }}
+                />
+                <button onClick={handleIncrement} style={{ width: '42px', height: '42px', fontSize: '1.2rem', fontWeight: 'bold' }}>+</button>
+              </div>
+              <button onClick={handleAddToCartClick} className="btn btn-primary" style={{ flex: 1, padding: '14px 20px', fontSize: '1rem' }}>
+                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+                  <circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle>
+                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                </svg>
+                Add to Cart
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -388,15 +429,37 @@ export default function ProductDetailModal({ productId, onClose }) {
         }
 
         @media (max-width: 768px) {
+          .modal-backdrop {
+            align-items: flex-end;
+            padding: 0;
+          }
+          .modal-card {
+            border-radius: 20px 20px 0 0;
+            max-height: 92vh;
+            width: 100%;
+            max-width: 100%;
+          }
           .modal-content-grid {
             grid-template-columns: 1fr;
+            overflow-y: auto;
           }
           .gallery-section {
             border-right: none;
             border-bottom: 1px solid var(--border);
+            padding: 16px;
+          }
+          .main-preview-container {
+            aspect-ratio: 3/4;
+            max-height: 260px;
           }
           .details-section {
-            padding: 24px;
+            padding: 16px 16px 80px 16px;
+          }
+          .modal-mobile-cta {
+            display: flex !important;
+          }
+          .modal-desktop-cta {
+            display: none !important;
           }
         }
       `}</style>

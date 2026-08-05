@@ -107,7 +107,7 @@ export default function ProductCard({ product, onClick }) {
       </div>
 
       {/* Book Metadata details */}
-      <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', flexGrow: 1, gap: '8px' }}>
+      <div className="product-card-info" style={{ padding: '16px', display: 'flex', flexDirection: 'column', flexGrow: 1, gap: '8px' }}>
 
 
         <h4 style={{
