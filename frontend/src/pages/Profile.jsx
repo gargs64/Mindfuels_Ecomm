@@ -153,7 +153,7 @@ export default function Profile({ navigate }) {
     <div className="container" style={{ padding: '40px 20px 80px 20px', fontFamily: 'var(--font-body)', maxWidth: '900px' }}>
       
       {/* Profile Header Card */}
-      <div className="glass-panel" style={{
+      <div className="glass-panel profile-header-card" style={{
         display: 'flex', gap: '20px', padding: '24px', borderRadius: '20px', border: '1px solid var(--border)', alignItems: 'center', marginBottom: '30px', position: 'relative'
       }}>
         <div style={{
@@ -162,12 +162,12 @@ export default function Profile({ navigate }) {
         }} className="flex-center">
           {(profileForm.name || user?.name || user?.email || 'M').charAt(0).toUpperCase()}
         </div>
-        <div>
-          <h2 style={{ fontSize: '1.4rem', fontWeight: 800 }}>{profileForm.name || user?.name || user?.nickname}</h2>
-          <p style={{ color: 'var(--dark-light)', fontSize: '0.9rem' }}>{user?.email}</p>
+        <div style={{ flex: 1, overflow: 'hidden' }}>
+          <h2 style={{ fontSize: '1.4rem', fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis' }}>{profileForm.name || user?.name || user?.nickname}</h2>
+          <p style={{ color: 'var(--dark-light)', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.email}</p>
           {profileForm.phone && <p style={{ color: 'var(--dark-light)', fontSize: '0.85rem' }}>📞 {profileForm.phone}</p>}
         </div>
-        <button onClick={() => setActiveTab('settings')} className="btn btn-outline" style={{ position: 'absolute', right: '24px', top: '24px', padding: '8px 16px', fontSize: '0.85rem' }}>
+        <button onClick={() => setActiveTab('settings')} className="btn btn-secondary profile-edit-btn" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
           Edit Profile
         </button>
       </div>
