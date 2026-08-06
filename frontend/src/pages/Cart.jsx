@@ -333,17 +333,29 @@ export default function Cart({ navigate }) {
         </p>
 
         <div className="glass-panel" style={{ width: '100%', padding: '24px', borderRadius: '16px', border: '1px solid var(--border)', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div><strong>Order ID:</strong> #{confirmedOrderDetails.order_id}</div>
-          <div><strong>AWB Waybill:</strong> <code>{shipment.awb || 'Preparing AWB'}</code></div>
-          <div><strong>Courier Partner:</strong> {shipment.courier || 'Standard Logistics'}</div>
-          {shipment.trackingUrl && (
-            <div>
-              <strong>Tracking Details:</strong>{' '}
-              <a href={shipment.trackingUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--secondary)', fontWeight: 600, textDecoration: 'underline' }}>
-                Track Order Link
-              </a>
-            </div>
-          )}
+          {(() => {
+            const rawAwb = shipment.awb || '';
+            const rawCourier = shipment.courier || '';
+            const isFailedBooking = rawAwb.includes('SR-FAIL') || rawCourier.includes('Failed');
+            const displayAwb = isFailedBooking ? 'Assigning AWB Code (Updates via Email)' : rawAwb;
+            const displayCourier = isFailedBooking ? 'Express Delivery Partner' : rawCourier;
+
+            return (
+              <>
+                <div><strong>Order ID:</strong> #{confirmedOrderDetails.order_id}</div>
+                <div><strong>AWB Waybill:</strong> <code>{displayAwb}</code></div>
+                <div><strong>Courier Partner:</strong> {displayCourier}</div>
+                {shipment.trackingUrl && !isFailedBooking && (
+                  <div>
+                    <strong>Tracking Details:</strong>{' '}
+                    <a href={shipment.trackingUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--secondary)', fontWeight: 600, textDecoration: 'underline' }}>
+                      Track Order Link
+                    </a>
+                  </div>
+                )}
+              </>
+            );
+          })()}
           <div style={{ borderTop: '1px solid var(--border)', paddingTop: '12px', fontSize: '0.85rem', color: 'var(--dark-light)' }}>
             <strong>Estimated Delivery:</strong> 4–7 business days. Delivery tracking updates will also be sent to your email.
           </div>
