@@ -327,21 +327,26 @@ export default function Cart({ navigate }) {
           ✓
         </div>
         
-        <h2 style={{ fontSize: '2rem', fontWeight: 800 }}>Order Placed Successfully!</h2>
-        <p style={{ color: 'var(--dark-light)', fontSize: '0.95rem' }}>
-          Thank you for ordering with Mindfuels. Your payment has been captured and shipment booked.
-        </p>
+        {(() => {
+          const rawAwb = shipment.awb || '';
+          const rawCourier = shipment.courier || '';
+          const isFailedBooking = rawAwb.includes('SR-FAIL') || rawCourier.includes('Failed');
 
-        <div className="glass-panel" style={{ width: '100%', padding: '24px', borderRadius: '16px', border: '1px solid var(--border)', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {(() => {
-            const rawAwb = shipment.awb || '';
-            const rawCourier = shipment.courier || '';
-            const isFailedBooking = rawAwb.includes('SR-FAIL') || rawCourier.includes('Failed');
-            const displayAwb = isFailedBooking ? 'Assigning AWB Code (Updates via Email)' : rawAwb;
-            const displayCourier = isFailedBooking ? 'Express Delivery Partner' : rawCourier;
+          const subtitleText = isFailedBooking
+            ? 'Thank you for ordering with Mindfuels. Your payment has been captured and your order is being prepared for dispatch.'
+            : 'Thank you for ordering with Mindfuels. Your payment has been captured and shipment booked.';
 
-            return (
-              <>
+          const displayAwb = isFailedBooking ? 'Will be assigned upon dispatch' : rawAwb;
+          const displayCourier = isFailedBooking ? 'Pending Courier Assignment' : rawCourier;
+
+          return (
+            <>
+              <h2 style={{ fontSize: '2rem', fontWeight: 800 }}>Order Placed Successfully!</h2>
+              <p style={{ color: 'var(--dark-light)', fontSize: '0.95rem' }}>
+                {subtitleText}
+              </p>
+
+              <div className="glass-panel" style={{ width: '100%', padding: '24px', borderRadius: '16px', border: '1px solid var(--border)', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <div><strong>Order ID:</strong> #{confirmedOrderDetails.order_id}</div>
                 <div><strong>AWB Waybill:</strong> <code>{displayAwb}</code></div>
                 <div><strong>Courier Partner:</strong> {displayCourier}</div>
@@ -353,13 +358,13 @@ export default function Cart({ navigate }) {
                     </a>
                   </div>
                 )}
-              </>
-            );
-          })()}
-          <div style={{ borderTop: '1px solid var(--border)', paddingTop: '12px', fontSize: '0.85rem', color: 'var(--dark-light)' }}>
-            <strong>Estimated Delivery:</strong> 4–7 business days. Delivery tracking updates will also be sent to your email.
-          </div>
-        </div>
+                <div style={{ borderTop: '1px solid var(--border)', paddingTop: '12px', fontSize: '0.85rem', color: 'var(--dark-light)' }}>
+                  <strong>Estimated Delivery:</strong> 4–7 business days. Delivery tracking updates will also be sent to your email.
+                </div>
+              </div>
+            </>
+          );
+        })()}
 
         {/* Option 3: WhatsApp Click-to-Chat Button */}
         <a
