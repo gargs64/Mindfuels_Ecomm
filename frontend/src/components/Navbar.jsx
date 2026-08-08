@@ -194,33 +194,83 @@ export default function Navbar({ currentPath, navigate }) {
 
           {/* Account Profile / Login */}
           <div style={{ position: 'relative' }}>
-            {isAuthenticated ? (
-              <button onClick={() => setAccountMenuOpen(!accountMenuOpen)} style={{
-                width: '38px', height: '38px', borderRadius: '50%', background: '#F0AA8D', color: '#fff', fontSize: '1rem',
-                fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid rgba(255,255,255,0.8)'
-              }}>
-                {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
-              </button>
-            ) : (
+            {isAuthenticated ? (() => {
+              // Prefer Google given_name, fallback to nickname (email prefix), then full name
+              const displayName = user?.given_name || user?.nickname || user?.name || '';
+              const initial = displayName ? displayName.charAt(0).toUpperCase() : 'U';
+              return (
+                <button onClick={() => setAccountMenuOpen(!accountMenuOpen)} style={{
+                  width: '38px', height: '38px', borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #FF7E5F 0%, #FF5A36 100%)',
+                  color: '#fff', fontSize: '1rem', fontWeight: 'bold',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  border: '2px solid rgba(255,255,255,0.9)',
+                  boxShadow: '0 2px 8px rgba(255,90,54,0.35)'
+                }}>
+                  {initial}
+                </button>
+              );
+            })() : (
               <button onClick={() => loginWithRedirect()} className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
                 Login
               </button>
             )}
 
             {/* Account Context Dropdown Menu */}
-            {accountMenuOpen && isAuthenticated && (
-              <div className="account-popup glass-panel" style={{
-                position: 'absolute', right: 0, top: '45px', width: '200px', borderRadius: '12px', overflow: 'hidden', zIndex: 1010
-              }}>
-                <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', fontSize: '0.85rem' }}>
-                  <div style={{ fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.name}</div>
-                  <div style={{ color: 'var(--dark-light)', fontSize: '0.75rem', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.email}</div>
+            {accountMenuOpen && isAuthenticated && (() => {
+              const displayName = user?.given_name
+                ? `${user.given_name}${user.family_name ? ' ' + user.family_name : ''}`
+                : user?.nickname || user?.name || user?.email || 'User';
+              return (
+                <div className="account-popup" style={{
+                  position: 'absolute',
+                  right: '-4px',
+                  top: '48px',
+                  width: '230px',
+                  borderRadius: '14px',
+                  overflow: 'hidden',
+                  zIndex: 1010,
+                  background: 'rgba(255, 255, 255, 0.98)',
+                  border: '1px solid var(--border)',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.14)'
+                }}>
+                  {/* User Header */}
+                  <div style={{
+                    padding: '14px 16px',
+                    borderBottom: '1px solid var(--border)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    background: 'rgba(248, 250, 252, 0.9)'
+                  }}>
+                    {user?.picture ? (
+                      <img src={user.picture} alt="avatar"
+                        style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border)' }} />
+                    ) : (
+                      <div style={{
+                        width: '36px', height: '36px', borderRadius: '50%',
+                        background: 'linear-gradient(135deg, #FF7E5F, #FF5A36)',
+                        color: '#fff', fontWeight: 'bold', fontSize: '1rem',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center'
+                      }}>
+                        {displayName.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div style={{ overflow: 'hidden' }}>
+                      <div style={{ fontWeight: 700, fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--dark)' }}>
+                        {displayName}
+                      </div>
+                      <div style={{ color: 'var(--dark-light)', fontSize: '0.72rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {user.email}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="account-menu-link" onClick={() => { navigate('/profile'); setAccountMenuOpen(false); }}>Order History</div>
+                  <div className="account-menu-link" onClick={() => { navigate('/profile'); setAccountMenuOpen(false); }}>Addresses</div>
+                  <div className="account-menu-link" onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })} style={{ color: 'var(--error)' }}>Logout</div>
                 </div>
-                <div className="account-menu-link" onClick={() => { navigate('/profile'); setAccountMenuOpen(false); }}>Order History</div>
-                <div className="account-menu-link" onClick={() => { navigate('/profile'); setAccountMenuOpen(false); }}>Addresses</div>
-                <div className="account-menu-link" onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })} style={{ color: 'var(--error)' }}>Logout</div>
-              </div>
-            )}
+              );
+            })()}
           </div>
 
           {/* Hamburger Mobile Menu Toggle */}
