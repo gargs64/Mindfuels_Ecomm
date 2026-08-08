@@ -195,10 +195,15 @@ export default function Navbar({ currentPath, navigate }) {
           {/* Account Profile / Login */}
           <div style={{ position: 'relative' }}>
             {isAuthenticated ? (() => {
-              // Prefer Google given_name, then name if not an email, then nickname
-              const displayName = user?.given_name ||
+              // Custom claims set by Auth0 Post Login Action from Google profileData
+              const ns = 'https://mindfuels.com';
+              const displayName =
+                user?.[`${ns}/display_name`] ||
+                user?.[`${ns}/given_name`] ||
+                user?.given_name ||
                 (user?.name && !user.name.includes('@') ? user.name : null) ||
-                user?.nickname || user?.name || '';
+                user?.nickname || user?.email || '';
+              const picture = user?.[`${ns}/picture`] || user?.picture || null;
               const initial = displayName ? displayName.charAt(0).toUpperCase() : 'U';
               return (
                 <button onClick={() => setAccountMenuOpen(!accountMenuOpen)} style={{
@@ -220,10 +225,15 @@ export default function Navbar({ currentPath, navigate }) {
 
             {/* Account Context Dropdown Menu */}
             {accountMenuOpen && isAuthenticated && (() => {
-              const displayName = user?.given_name
-                ? `${user.given_name}${user.family_name ? ' ' + user.family_name : ''}`
-                : (user?.name && !user.name.includes('@') ? user.name : null) ||
-                  user?.nickname || user?.email || 'User';
+              const ns = 'https://mindfuels.com';
+              const givenName  = user?.[`${ns}/given_name`]  || user?.given_name  || '';
+              const familyName = user?.[`${ns}/family_name`] || user?.family_name || '';
+              const picture    = user?.[`${ns}/picture`]     || user?.picture     || null;
+              const displayName =
+                user?.[`${ns}/display_name`] ||
+                (givenName ? `${givenName}${familyName ? ' ' + familyName : ''}` : null) ||
+                (user?.name && !user.name.includes('@') ? user.name : null) ||
+                user?.nickname || user?.email || 'User';
               return (
                 <div className="account-popup" style={{
                   position: 'absolute',
@@ -246,8 +256,8 @@ export default function Navbar({ currentPath, navigate }) {
                     gap: '10px',
                     background: 'rgba(248, 250, 252, 0.9)'
                   }}>
-                    {user?.picture ? (
-                      <img src={user.picture} alt="avatar"
+                    {picture ? (
+                      <img src={picture} alt="avatar"
                         style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border)' }} />
                     ) : (
                       <div style={{
