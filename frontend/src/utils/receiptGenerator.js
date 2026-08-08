@@ -206,7 +206,7 @@ export const downloadReceipt = (order) => {
       <div class="invoice-box">
         <div class="header">
           <div>
-            <div class="brand">Mind<span>fuels</span></div>
+            <img src="${window.location.origin}/photos/logo.png" alt="Mindfuels Logo" style="height: 46px; object-fit: contain; display: block; margin-bottom: 6px;" />
             <div class="subtitle">Trustworthy Children's Books & Activity Workbooks</div>
           </div>
           <div class="invoice-title">
@@ -280,7 +280,7 @@ export const downloadReceipt = (order) => {
 
         <div class="footer">
           <p style="margin: 0 0 6px 0;">Thank you for shopping with <strong>Mindfuels</strong>!</p>
-          <p style="margin: 0;">For queries or support, reach out to us at <strong>support@mindfuelspublisher.com</strong> or WhatsApp <strong>+91 9811507332</strong></p>
+          <p style="margin: 0;">For queries or support, reach out to us at <strong>support@mindfuelspublisher.com</strong> or WhatsApp <strong>+91 9899923670</strong></p>
         </div>
       </div>
     </body>

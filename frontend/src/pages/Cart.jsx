@@ -402,7 +402,7 @@ export default function Cart({ navigate }) {
 
         {/* Option 3: WhatsApp Click-to-Chat Button */}
         <a
-          href={`https://wa.me/919811507332?text=${encodeURIComponent(`Hi Mindfuels! I just placed Order #${confirmedOrderDetails.order_id}. Please confirm my order details.`)}`}
+          href={`https://wa.me/919899923670?text=${encodeURIComponent(`Hi Mindfuels! I just placed Order #${confirmedOrderDetails.order_id}. Please confirm my order details.`)}`}
           target="_blank"
           rel="noopener noreferrer"
           style={{
