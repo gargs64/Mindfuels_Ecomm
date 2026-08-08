@@ -281,6 +281,18 @@ img, video {
   background: #94A3B8;
 }
 
+/* Hero Banner */
+.hero-banner {
+  position: relative;
+  width: 100%;
+  min-height: 480px;
+  max-height: 620px;
+  aspect-ratio: 16 / 7;
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
 /* Grid Layout definitions */
 .product-grid {
   display: grid;
@@ -539,9 +551,11 @@ img, video {
 
   /* Hero adjustments for mobile */
   .hero-banner {
-    min-height: 200px !important;
-    max-height: 240px !important;
-    aspect-ratio: 16/9 !important;
+    min-height: 180px !important;
+    max-height: 260px !important;
+    aspect-ratio: 16 / 6 !important;
+    background-size: cover !important;
+    background-position: center center !important;
   }
 
   /* Cart Layout collapse */
@@ -616,8 +630,10 @@ img, video {
 
 @media (max-width: 480px) {
   .hero-banner {
-    min-height: 160px !important;
-    max-height: 200px !important;
+    min-height: 140px !important;
+    max-height: 180px !important;
+    aspect-ratio: 16 / 6 !important;
+    background-size: cover !important;
   }
 }
 

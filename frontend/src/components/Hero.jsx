@@ -13,39 +13,15 @@ export default function Hero({ navigate }) {
   ];
 
   return (
-    <section className="hero-section" style={{ position: 'relative', overflow: 'hidden' }}>
+    <section className="hero-section" style={{ position: 'relative', overflow: 'hidden', width: '100%' }}>
       {/* Primary Banner Image Area */}
       <div className="hero-banner" style={{
-        position: 'relative',
         width: '100%',
-        minHeight: '480px',
-        maxHeight: '620px',
-        aspectRatio: '16/7',
         backgroundImage: 'url("/photos/hero-image.png")',
         backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        display: 'flex',
-        alignItems: 'center',
-        padding: '0 5%'
+        backgroundPosition: 'center center',
+        backgroundRepeat: 'no-repeat',
       }}>
-        <style>{`
-          @media (max-width: 768px) {
-            .hero-banner {
-              min-height: 180px !important;
-              max-height: 260px !important;
-              aspect-ratio: unset !important;
-              background-size: contain !important;
-              background-position: center center !important;
-              background-color: #ffffff !important;
-            }
-          }
-          @media (max-width: 480px) {
-            .hero-banner {
-              min-height: 150px !important;
-              max-height: 220px !important;
-            }
-          }
-        `}</style>
       </div>
 
       {/* Infinite scrolling Trust Bar Marquee */}
