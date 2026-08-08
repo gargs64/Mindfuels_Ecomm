@@ -288,19 +288,17 @@ export default function Navbar({ currentPath, navigate }) {
                         gap: '10px',
                         background: 'rgba(248, 250, 252, 0.9)'
                       }}>
-                        {picture ? (
-                          <img src={picture} alt="avatar"
-                            style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border)' }} />
-                        ) : (
-                          <div style={{
-                            width: '36px', height: '36px', borderRadius: '50%',
-                            background: 'linear-gradient(135deg, #FF7E5F, #FF5A36)',
-                            color: '#fff', fontWeight: 'bold', fontSize: '1rem',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center'
-                          }}>
-                            {initial}
-                          </div>
-                        )}
+                        <div style={{
+                          width: '36px', height: '36px', borderRadius: '50%',
+                          background: 'linear-gradient(135deg, #FF7E5F 0%, #FF5A36 100%)',
+                          color: '#fff', fontSize: '1rem', fontWeight: 'bold',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          border: '2px solid rgba(255,255,255,0.9)',
+                          boxShadow: '0 2px 8px rgba(255,90,54,0.35)',
+                          flexShrink: 0
+                        }}>
+                          {initial}
+                        </div>
                         <div style={{ overflow: 'hidden' }}>
                           <div style={{ fontWeight: 700, fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--dark)' }}>
                             {displayName}
