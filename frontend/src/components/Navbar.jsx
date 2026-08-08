@@ -195,8 +195,10 @@ export default function Navbar({ currentPath, navigate }) {
           {/* Account Profile / Login */}
           <div style={{ position: 'relative' }}>
             {isAuthenticated ? (() => {
-              // Prefer Google given_name, fallback to nickname (email prefix), then full name
-              const displayName = user?.given_name || user?.nickname || user?.name || '';
+              // Prefer Google given_name, then name if not an email, then nickname
+              const displayName = user?.given_name ||
+                (user?.name && !user.name.includes('@') ? user.name : null) ||
+                user?.nickname || user?.name || '';
               const initial = displayName ? displayName.charAt(0).toUpperCase() : 'U';
               return (
                 <button onClick={() => setAccountMenuOpen(!accountMenuOpen)} style={{
@@ -220,7 +222,8 @@ export default function Navbar({ currentPath, navigate }) {
             {accountMenuOpen && isAuthenticated && (() => {
               const displayName = user?.given_name
                 ? `${user.given_name}${user.family_name ? ' ' + user.family_name : ''}`
-                : user?.nickname || user?.name || user?.email || 'User';
+                : (user?.name && !user.name.includes('@') ? user.name : null) ||
+                  user?.nickname || user?.email || 'User';
               return (
                 <div className="account-popup" style={{
                   position: 'absolute',
