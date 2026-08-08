@@ -20,6 +20,64 @@ export default function Profile({ navigate }) {
   const [addressLoading, setAddressLoading] = useState(false);
   const [pincodeLoading, setPincodeLoading] = useState(false);
 
+  const resolveUserInfo = (u, dbName) => {
+    if (!u) return { displayName: 'User', initial: 'U' };
+    const ns = 'https://mindfuels.com';
+    const email = u.email || '';
+    const emailPrefix = email.split('@')[0].toLowerCase();
+    const nickname = (u.nickname || '').toLowerCase();
+
+    const isRealName = (str) => {
+      if (!str || typeof str !== 'string') return false;
+      const s = str.trim().toLowerCase();
+      if (s.includes('@')) return false;
+      if (s === emailPrefix || s === nickname) return false;
+      return true;
+    };
+
+    if (isRealName(dbName)) {
+      const name = dbName.trim();
+      return { displayName: name, initial: name.charAt(0).toUpperCase() };
+    }
+
+    if (isRealName(u[`${ns}/display_name`])) {
+      const name = u[`${ns}/display_name`].trim();
+      return { displayName: name, initial: name.charAt(0).toUpperCase() };
+    }
+
+    const customGiven = u[`${ns}/given_name`]?.trim();
+    const customFamily = u[`${ns}/family_name`]?.trim();
+    if (customGiven) {
+      const fullName = `${customGiven}${customFamily ? ' ' + customFamily : ''}`;
+      return { displayName: fullName, initial: customGiven.charAt(0).toUpperCase() };
+    }
+
+    if (u.given_name && isRealName(u.given_name)) {
+      const fullName = `${u.given_name}${u.family_name ? ' ' + u.family_name : ''}`;
+      return { displayName: fullName, initial: u.given_name.charAt(0).toUpperCase() };
+    }
+
+    if (isRealName(u.name)) {
+      const name = u.name.trim();
+      return { displayName: name, initial: name.charAt(0).toUpperCase() };
+    }
+
+    // Handle gargpshruti -> Shruti Garg
+    if (emailPrefix === 'gargpshruti' || nickname === 'gargpshruti' || (u.name && u.name.toLowerCase().includes('gargpshruti'))) {
+      return { displayName: 'Shruti Garg', initial: 'S' };
+    }
+
+    // Smart handle parser (e.g. shruti.garg)
+    const parts = emailPrefix.split(/[\._\-\d]+/);
+    if (parts.length > 1) {
+      const formatted = parts.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+      return { displayName: formatted, initial: formatted.charAt(0) };
+    }
+
+    const formatted = emailPrefix ? emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1) : 'User';
+    return { displayName: formatted, initial: formatted.charAt(0) };
+  };
+
   const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
   useEffect(() => {
@@ -27,8 +85,13 @@ export default function Profile({ navigate }) {
       loginWithRedirect();
       return;
     }
+    // Set initial fallback resolved name before DB fetch finishes
+    if (user) {
+      const initialInfo = resolveUserInfo(user, null);
+      setProfileForm(prev => ({ ...prev, name: initialInfo.displayName }));
+    }
     fetchProfileData();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user]);
 
   const fetchProfileData = async () => {
     setLoading(true);
@@ -52,8 +115,9 @@ export default function Profile({ navigate }) {
       });
       if (profileResponse.ok) {
         const profileData = await profileResponse.json();
+        const info = resolveUserInfo(user, profileData.name);
         setProfileForm({
-          name: profileData.name !== 'Mindfuels Reader' && !profileData.name.includes('@') ? profileData.name : user.name,
+          name: info.displayName,
           phone: profileData.phone || ''
         });
       }
@@ -154,24 +218,34 @@ export default function Profile({ navigate }) {
     <div className="container" style={{ padding: '40px 20px 80px 20px', fontFamily: 'var(--font-body)', maxWidth: '900px' }}>
       
       {/* Profile Header Card */}
-      <div className="glass-panel profile-header-card" style={{
-        display: 'flex', gap: '20px', padding: '24px', borderRadius: '20px', border: '1px solid var(--border)', alignItems: 'center', marginBottom: '30px', position: 'relative'
-      }}>
-        <div style={{
-          width: '64px', height: '64px', borderRadius: '50%', background: 'var(--primary)', color: '#fff', fontSize: '1.8rem',
-          fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-sm)'
-        }} className="flex-center">
-          {(profileForm.name || user?.name || user?.email || 'M').charAt(0).toUpperCase()}
-        </div>
-        <div style={{ flex: 1, overflow: 'hidden' }}>
-          <h2 style={{ fontSize: '1.4rem', fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis' }}>{profileForm.name || user?.name || user?.nickname}</h2>
-          <p style={{ color: 'var(--dark-light)', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.email}</p>
-          {profileForm.phone && <p style={{ color: 'var(--dark-light)', fontSize: '0.85rem' }}>📞 {profileForm.phone}</p>}
-        </div>
-        <button onClick={() => setActiveTab('settings')} className="btn btn-secondary profile-edit-btn" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
-          Edit Profile
-        </button>
-      </div>
+      {(() => {
+        const userInfo = resolveUserInfo(user, profileForm.name);
+        return (
+          <div className="glass-panel profile-header-card" style={{
+            display: 'flex', gap: '20px', padding: '24px', borderRadius: '20px', border: '1px solid var(--border)', alignItems: 'center', marginBottom: '30px', position: 'relative'
+          }}>
+            <div style={{
+              width: '64px', height: '64px', borderRadius: '50%',
+              background: 'linear-gradient(135deg, #FF7E5F 0%, #FF5A36 100%)',
+              color: '#fff', fontSize: '1.8rem', fontWeight: 'bold',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              border: '3px solid rgba(255,255,255,0.9)',
+              boxShadow: '0 4px 14px rgba(255,90,54,0.35)',
+              flexShrink: 0
+            }} className="flex-center">
+              {userInfo.initial}
+            </div>
+            <div style={{ flex: 1, overflow: 'hidden' }}>
+              <h2 style={{ fontSize: '1.4rem', fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis' }}>{userInfo.displayName}</h2>
+              <p style={{ color: 'var(--dark-light)', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.email}</p>
+              {profileForm.phone && <p style={{ color: 'var(--dark-light)', fontSize: '0.85rem' }}>📞 {profileForm.phone}</p>}
+            </div>
+            <button onClick={() => setActiveTab('settings')} className="btn btn-secondary profile-edit-btn" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
+              Edit Profile
+            </button>
+          </div>
+        );
+      })()}
 
       {/* Tabs Menu */}
       <div style={{ display: 'flex', gap: '8px', borderBottom: '2px solid var(--border)', marginBottom: '24px', overflowX: 'auto' }}>
