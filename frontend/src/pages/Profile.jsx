@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
+import { downloadReceipt } from '../utils/receiptGenerator.js';
 
 export default function Profile({ navigate }) {
   const { isAuthenticated, getAccessTokenSilently, user, loginWithRedirect } = useAuth0();
@@ -219,28 +220,51 @@ export default function Profile({ navigate }) {
                 {/* Order Header Summary */}
                 <div style={{
                   background: 'var(--light)', padding: '14px 20px', display: 'flex', justifyContent: 'space-between',
-                  flexWrap: 'wrap', gap: '12px', fontSize: '0.85rem', borderBottom: '1px solid var(--border)'
+                  alignItems: 'center', flexWrap: 'wrap', gap: '12px', fontSize: '0.85rem', borderBottom: '1px solid var(--border)'
                 }}>
-                  <div>
-                    <span style={{ color: 'var(--dark-light)' }}>Ordered on:</span>{' '}
-                    <strong>{new Date(order.created_at).toLocaleDateString()}</strong>
+                  <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <div>
+                      <span style={{ color: 'var(--dark-light)' }}>Ordered on:</span>{' '}
+                      <strong>{new Date(order.created_at).toLocaleDateString()}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: 'var(--dark-light)' }}>Order Reference:</span>{' '}
+                      <strong>#{order.id}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: 'var(--dark-light)' }}>Amount:</span>{' '}
+                      <strong style={{ color: 'var(--primary)' }}>₹{order.total_amount}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: 'var(--dark-light)' }}>Status:</span>{' '}
+                      <span className="badge" style={{
+                        background: order.payment_status === 'Paid' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                        color: order.payment_status === 'Paid' ? 'var(--success)' : 'var(--error)',
+                        fontSize: '0.7rem'
+                      }}>{order.payment_status}</span>
+                    </div>
                   </div>
-                  <div>
-                    <span style={{ color: 'var(--dark-light)' }}>Order Reference:</span>{' '}
-                    <strong>#{order.id}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: 'var(--dark-light)' }}>Amount:</span>{' '}
-                    <strong style={{ color: 'var(--primary)' }}>₹{order.total_amount}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: 'var(--dark-light)' }}>Payment Status:</span>{' '}
-                    <span className="badge" style={{
-                      background: order.payment_status === 'Paid' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
-                      color: order.payment_status === 'Paid' ? 'var(--success)' : 'var(--error)',
-                      fontSize: '0.7rem'
-                    }}>{order.payment_status}</span>
-                  </div>
+
+                  {/* Download Receipt Action Button */}
+                  <button
+                    onClick={() => downloadReceipt(order)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '6px 14px',
+                      borderRadius: '50px',
+                      background: 'rgba(255, 90, 54, 0.08)',
+                      color: 'var(--primary)',
+                      border: '1px solid rgba(255, 90, 54, 0.2)',
+                      fontWeight: 700,
+                      fontSize: '0.8rem',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    📄 Download Receipt
+                  </button>
                 </div>
 
                 {/* Items & Shipping logs */}
@@ -258,22 +282,50 @@ export default function Profile({ navigate }) {
                     ))}
                   </div>
 
-                  {/* Shipment details */}
+                  {/* Shipment details & Tracking */}
                   <div style={{
-                    background: 'rgba(255,255,255,0.5)', padding: '16px', borderRadius: '12px',
-                    border: '1px solid var(--border)', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '6px'
+                    background: 'rgba(258,250,252,0.6)', padding: '16px', borderRadius: '12px',
+                    border: '1px solid var(--border)', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '8px'
                   }}>
-                    <h5 style={{ fontSize: '0.9rem', marginBottom: '4px', fontWeight: 'bold' }}>Delivery Tracking</h5>
+                    <h5 style={{ fontSize: '0.9rem', marginBottom: '2px', fontWeight: 'bold' }}>Delivery Tracking</h5>
                     <div><strong>Status:</strong> {order.shipping_status || 'Processing order'}</div>
                     <div><strong>Courier:</strong> {order.courier_name || 'Standard Shipping'}</div>
-                    <div><strong>AWB No:</strong> <code>{order.awb_code || 'Pending Waybill'}</code></div>
-                    {order.tracking_url && (
-                      <a href={order.tracking_url} target="_blank" rel="noopener noreferrer" style={{
-                        color: 'var(--secondary)', fontWeight: 600, textDecoration: 'underline', marginTop: '6px'
-                      }}>
-                        Live Tracking Link ➔
-                      </a>
-                    )}
+                    <div><strong>AWB No:</strong> <code>{order.awb_code && !order.awb_code.includes('SR-FAIL') ? order.awb_code : 'Will be assigned upon dispatch'}</code></div>
+                    
+                    {/* Live Tracking Button */}
+                    {(() => {
+                      const trackingUrl = order.tracking_url
+                        ? order.tracking_url
+                        : (order.awb_code && !order.awb_code.includes('SR-FAIL'))
+                          ? `https://shiprocket.co/tracking/${order.awb_code}`
+                          : `https://shiprocket.co/tracking/${order.id}`;
+
+                      return (
+                        <a
+                          href={trackingUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            marginTop: '8px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            padding: '8px 14px',
+                            borderRadius: '8px',
+                            background: 'var(--secondary)',
+                            color: '#FFFFFF',
+                            fontWeight: 700,
+                            fontSize: '0.82rem',
+                            textDecoration: 'none',
+                            boxShadow: '0 2px 6px rgba(74, 144, 226, 0.25)',
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          🚚 Track Shipment ➔
+                        </a>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>

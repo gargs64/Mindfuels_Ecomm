@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { useCart } from '../context/CartContext.jsx';
+import { downloadReceipt } from '../utils/receiptGenerator.js';
 
 export default function Cart({ navigate }) {
   const { isAuthenticated, getAccessTokenSilently, loginWithRedirect } = useAuth0();
@@ -365,6 +366,39 @@ export default function Cart({ navigate }) {
             </>
           );
         })()}
+
+        {/* Option 2.5: Download Order Receipt Button */}
+        <button
+          onClick={() => {
+            downloadReceipt({
+              order_id: confirmedOrderDetails.order_id,
+              total_amount: totalAmount,
+              full_name: fullName,
+              phone: phone,
+              address_line1: addressLine1,
+              address_line2: addressLine2,
+              city: city,
+              state: state,
+              pincode: pincode,
+              payment_status: 'Paid',
+              items: cartItems.length > 0 ? cartItems : []
+            });
+          }}
+          className="btn btn-primary"
+          style={{
+            width: '100%',
+            padding: '14px 24px',
+            borderRadius: '12px',
+            fontWeight: 700,
+            fontSize: '1rem',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px'
+          }}
+        >
+          📄 Download Order Receipt (PDF)
+        </button>
 
         {/* Option 3: WhatsApp Click-to-Chat Button */}
         <a
