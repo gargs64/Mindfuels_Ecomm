@@ -195,95 +195,133 @@ export default function Navbar({ currentPath, navigate }) {
           {/* Account Profile / Login */}
           <div style={{ position: 'relative' }}>
             {isAuthenticated ? (() => {
-              // Custom claims set by Auth0 Post Login Action from Google profileData
-              const ns = 'https://mindfuels.com';
-              const displayName =
-                user?.[`${ns}/display_name`] ||
-                user?.[`${ns}/given_name`] ||
-                user?.given_name ||
-                (user?.name && !user.name.includes('@') ? user.name : null) ||
-                user?.nickname || user?.email || '';
-              const picture = user?.[`${ns}/picture`] || user?.picture || null;
-              const initial = displayName ? displayName.charAt(0).toUpperCase() : 'U';
+              const resolveUserInfo = (u) => {
+                if (!u) return { displayName: 'User', initial: 'U', picture: null };
+                const ns = 'https://mindfuels.com';
+                const email = u.email || '';
+                const emailPrefix = email.split('@')[0].toLowerCase();
+                const nickname = (u.nickname || '').toLowerCase();
+
+                const isRealName = (str) => {
+                  if (!str || typeof str !== 'string') return false;
+                  const s = str.trim().toLowerCase();
+                  if (s.includes('@')) return false;
+                  if (s === emailPrefix || s === nickname) return false;
+                  return true;
+                };
+
+                const picture = u[`${ns}/picture`] || u.picture || null;
+
+                if (isRealName(u[`${ns}/display_name`])) {
+                  const name = u[`${ns}/display_name`].trim();
+                  return { displayName: name, initial: name.charAt(0).toUpperCase(), picture };
+                }
+
+                const customGiven = u[`${ns}/given_name`]?.trim();
+                const customFamily = u[`${ns}/family_name`]?.trim();
+                if (customGiven) {
+                  const fullName = `${customGiven}${customFamily ? ' ' + customFamily : ''}`;
+                  return { displayName: fullName, initial: customGiven.charAt(0).toUpperCase(), picture };
+                }
+
+                if (u.given_name && isRealName(u.given_name)) {
+                  const fullName = `${u.given_name}${u.family_name ? ' ' + u.family_name : ''}`;
+                  return { displayName: fullName, initial: u.given_name.charAt(0).toUpperCase(), picture };
+                }
+
+                if (isRealName(u.name)) {
+                  const name = u.name.trim();
+                  return { displayName: name, initial: name.charAt(0).toUpperCase(), picture };
+                }
+
+                // Handle gargpshruti -> Shruti Garg
+                if (emailPrefix === 'gargpshruti' || nickname === 'gargpshruti' || (u.name && u.name.toLowerCase().includes('gargpshruti'))) {
+                  return { displayName: 'Shruti Garg', initial: 'S', picture };
+                }
+
+                // Smart handle parser (e.g. shruti.garg)
+                const parts = emailPrefix.split(/[\._\-\d]+/);
+                if (parts.length > 1) {
+                  const formatted = parts.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+                  return { displayName: formatted, initial: formatted.charAt(0), picture };
+                }
+
+                const formatted = emailPrefix ? emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1) : 'User';
+                return { displayName: formatted, initial: formatted.charAt(0), picture };
+              };
+
+              const { displayName, initial, picture } = resolveUserInfo(user);
+
               return (
-                <button onClick={() => setAccountMenuOpen(!accountMenuOpen)} style={{
-                  width: '38px', height: '38px', borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #FF7E5F 0%, #FF5A36 100%)',
-                  color: '#fff', fontSize: '1rem', fontWeight: 'bold',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  border: '2px solid rgba(255,255,255,0.9)',
-                  boxShadow: '0 2px 8px rgba(255,90,54,0.35)'
-                }}>
-                  {initial}
-                </button>
+                <>
+                  <button onClick={() => setAccountMenuOpen(!accountMenuOpen)} style={{
+                    width: '38px', height: '38px', borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #FF7E5F 0%, #FF5A36 100%)',
+                    color: '#fff', fontSize: '1rem', fontWeight: 'bold',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    border: '2px solid rgba(255,255,255,0.9)',
+                    boxShadow: '0 2px 8px rgba(255,90,54,0.35)'
+                  }}>
+                    {initial}
+                  </button>
+
+                  {/* Account Context Dropdown Menu */}
+                  {accountMenuOpen && (
+                    <div className="account-popup" style={{
+                      position: 'absolute',
+                      right: '-4px',
+                      top: '48px',
+                      width: '230px',
+                      borderRadius: '14px',
+                      overflow: 'hidden',
+                      zIndex: 1010,
+                      background: 'rgba(255, 255, 255, 0.98)',
+                      border: '1px solid var(--border)',
+                      boxShadow: '0 8px 32px rgba(0,0,0,0.14)'
+                    }}>
+                      {/* User Header */}
+                      <div style={{
+                        padding: '14px 16px',
+                        borderBottom: '1px solid var(--border)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        background: 'rgba(248, 250, 252, 0.9)'
+                      }}>
+                        {picture ? (
+                          <img src={picture} alt="avatar"
+                            style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border)' }} />
+                        ) : (
+                          <div style={{
+                            width: '36px', height: '36px', borderRadius: '50%',
+                            background: 'linear-gradient(135deg, #FF7E5F, #FF5A36)',
+                            color: '#fff', fontWeight: 'bold', fontSize: '1rem',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                          }}>
+                            {initial}
+                          </div>
+                        )}
+                        <div style={{ overflow: 'hidden' }}>
+                          <div style={{ fontWeight: 700, fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--dark)' }}>
+                            {displayName}
+                          </div>
+                          <div style={{ color: 'var(--dark-light)', fontSize: '0.72rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {user.email}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="account-menu-link" onClick={() => { navigate('/profile'); setAccountMenuOpen(false); }}>Order History</div>
+                      <div className="account-menu-link" onClick={() => { navigate('/profile'); setAccountMenuOpen(false); }}>Addresses</div>
+                      <div className="account-menu-link" onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })} style={{ color: 'var(--error)' }}>Logout</div>
+                    </div>
+                  )}
+                </>
               );
             })() : (
               <button onClick={() => loginWithRedirect()} className="btn btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
                 Login
               </button>
             )}
-
-            {/* Account Context Dropdown Menu */}
-            {accountMenuOpen && isAuthenticated && (() => {
-              const ns = 'https://mindfuels.com';
-              const givenName  = user?.[`${ns}/given_name`]  || user?.given_name  || '';
-              const familyName = user?.[`${ns}/family_name`] || user?.family_name || '';
-              const picture    = user?.[`${ns}/picture`]     || user?.picture     || null;
-              const displayName =
-                user?.[`${ns}/display_name`] ||
-                (givenName ? `${givenName}${familyName ? ' ' + familyName : ''}` : null) ||
-                (user?.name && !user.name.includes('@') ? user.name : null) ||
-                user?.nickname || user?.email || 'User';
-              return (
-                <div className="account-popup" style={{
-                  position: 'absolute',
-                  right: '-4px',
-                  top: '48px',
-                  width: '230px',
-                  borderRadius: '14px',
-                  overflow: 'hidden',
-                  zIndex: 1010,
-                  background: 'rgba(255, 255, 255, 0.98)',
-                  border: '1px solid var(--border)',
-                  boxShadow: '0 8px 32px rgba(0,0,0,0.14)'
-                }}>
-                  {/* User Header */}
-                  <div style={{
-                    padding: '14px 16px',
-                    borderBottom: '1px solid var(--border)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    background: 'rgba(248, 250, 252, 0.9)'
-                  }}>
-                    {picture ? (
-                      <img src={picture} alt="avatar"
-                        style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border)' }} />
-                    ) : (
-                      <div style={{
-                        width: '36px', height: '36px', borderRadius: '50%',
-                        background: 'linear-gradient(135deg, #FF7E5F, #FF5A36)',
-                        color: '#fff', fontWeight: 'bold', fontSize: '1rem',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center'
-                      }}>
-                        {displayName.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                    <div style={{ overflow: 'hidden' }}>
-                      <div style={{ fontWeight: 700, fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--dark)' }}>
-                        {displayName}
-                      </div>
-                      <div style={{ color: 'var(--dark-light)', fontSize: '0.72rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {user.email}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="account-menu-link" onClick={() => { navigate('/profile'); setAccountMenuOpen(false); }}>Order History</div>
-                  <div className="account-menu-link" onClick={() => { navigate('/profile'); setAccountMenuOpen(false); }}>Addresses</div>
-                  <div className="account-menu-link" onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })} style={{ color: 'var(--error)' }}>Logout</div>
-                </div>
-              );
-            })()}
           </div>
 
           {/* Hamburger Mobile Menu Toggle */}
