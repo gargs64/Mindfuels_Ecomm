@@ -196,14 +196,174 @@ export const downloadReceipt = (order) => {
           .invoice-box { border: none; boxShadow: none; padding: 0; }
           .actions-bar { display: none !important; }
         }
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+      <style>
+        * { box-sizing: border-box; }
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          color: #1E293B;
+          margin: 0;
+          padding: 40px 20px;
+          background: #F8FAFC;
+        }
+        .invoice-box {
+          max-width: 800px;
+          margin: auto;
+          padding: 36px;
+          border: 1px solid #E2E8F0;
+          border-radius: 16px;
+          background: #FFFFFF;
+          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+        }
+        .header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          border-bottom: 2px solid #FF5A36;
+          padding-bottom: 20px;
+          margin-bottom: 24px;
+        }
+        .brand {
+          font-size: 30px;
+          font-weight: 900;
+          color: #FF5A36;
+          letter-spacing: -0.5px;
+        }
+        .brand span { color: #4A90E2; }
+        .subtitle {
+          font-size: 13px;
+          color: #64748B;
+          margin-top: 4px;
+          font-weight: 500;
+        }
+        .invoice-title {
+          font-size: 22px;
+          font-weight: 800;
+          color: #1E293B;
+          text-align: right;
+        }
+        .badge-paid {
+          display: inline-block;
+          background: #ECFDF5;
+          color: #10B981;
+          border: 1px solid rgba(16,185,129,0.3);
+          padding: 4px 12px;
+          border-radius: 20px;
+          font-size: 11px;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          margin-top: 6px;
+        }
+        .details-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+          margin-bottom: 28px;
+        }
+        .section-title {
+          font-size: 11px;
+          font-weight: 800;
+          text-transform: uppercase;
+          color: #64748B;
+          margin-bottom: 8px;
+          letter-spacing: 0.8px;
+        }
+        .info-card {
+          background: #F8FAFC;
+          padding: 16px;
+          border-radius: 12px;
+          border: 1px solid #E2E8F0;
+          font-size: 13px;
+          line-height: 1.6;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 28px;
+        }
+        th {
+          background: #F1F5F9;
+          color: #475569;
+          font-weight: 700;
+          font-size: 12px;
+          text-transform: uppercase;
+          text-align: left;
+          padding: 12px 14px;
+          border-bottom: 2px solid #CBD5E1;
+        }
+        td {
+          padding: 14px;
+          font-size: 13px;
+          border-bottom: 1px solid #E2E8F0;
+        }
+        .summary-box {
+          margin-left: auto;
+          width: 300px;
+          font-size: 14px;
+        }
+        .summary-row {
+          display: flex;
+          justify-content: space-between;
+          padding: 8px 0;
+          color: #475569;
+        }
+        .grand-total {
+          font-weight: 800;
+          font-size: 18px;
+          color: #FF5A36;
+          border-top: 2px solid #E2E8F0;
+          padding-top: 12px;
+          margin-top: 8px;
+        }
+        .footer {
+          text-align: center;
+          margin-top: 36px;
+          padding-top: 24px;
+          border-top: 1px solid #E2E8F0;
+          color: #64748B;
+          font-size: 12px;
+          line-height: 1.6;
+        }
+        .actions-bar {
+          display: flex;
+          gap: 12px;
+          margin-bottom: 24px;
+          justify-content: flex-end;
+        }
+        .btn-action {
+          color: #FFFFFF;
+          border: none;
+          padding: 10px 24px;
+          font-weight: 700;
+          border-radius: 50px;
+          cursor: pointer;
+          font-size: 14px;
+          transition: transform 0.2s;
+        }
+        .btn-download {
+          background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+          box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+        .btn-print {
+          background: linear-gradient(135deg, #FF7E5F 0%, #FF5A36 100%);
+          box-shadow: 0 4px 12px rgba(255, 90, 54, 0.3);
+        }
+        .btn-action:hover { transform: translateY(-2px); }
+        @media print {
+          body { background: #fff; padding: 0; }
+          .invoice-box { border: none; boxShadow: none; padding: 0; }
+          .actions-bar { display: none !important; }
+        }
       </style>
     </head>
     <body>
       <div class="actions-bar">
-        <button class="print-btn" onclick="window.print()">🖨️ Download / Print PDF Receipt</button>
+        <button class="btn-action btn-download" onclick="downloadPdfFile()">📥 Download PDF File</button>
+        <button class="btn-action btn-print" onclick="window.print()">🖨️ Print Receipt</button>
       </div>
 
-      <div class="invoice-box">
+      <div class="invoice-box" id="invoice-content">
         <div class="header">
           <div>
             <img src="${window.location.origin}/photos/logo.png" alt="Mindfuels Logo" style="height: 46px; object-fit: contain; display: block; margin-bottom: 6px;" />
@@ -283,6 +443,31 @@ export const downloadReceipt = (order) => {
           <p style="margin: 0;">For queries or support, reach out to us at <strong>support@mindfuelspublisher.com</strong> or WhatsApp <strong>+91 9899923670</strong></p>
         </div>
       </div>
+
+      <script>
+        function downloadPdfFile() {
+          const btn = document.querySelector('.btn-download');
+          if (btn) btn.innerText = '⏳ Generating PDF...';
+          const element = document.getElementById('invoice-content');
+          const opt = {
+            margin:       8,
+            filename:     'Mindfuels_Invoice_Order_${orderId}.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true, logging: false },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+          };
+          if (window.html2pdf) {
+            html2pdf().set(opt).from(element).save().then(function() {
+              if (btn) btn.innerText = '📥 Download PDF File';
+            }).catch(function() {
+              if (btn) btn.innerText = '📥 Download PDF File';
+              window.print();
+            });
+          } else {
+            window.print();
+          }
+        }
+      </script>
     </body>
     </html>
   `;
