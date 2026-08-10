@@ -38,19 +38,21 @@ export const ensureUser = async (req, res, next) => {
 
     // ── Auth0 access tokens don't include email by default ──────────────────
     // If email is missing from JWT, call Auth0 /userinfo to get the real email.
-    // This is the correct OAuth2 way to retrieve the user's email claim.
     if (!tokenEmail) {
       try {
         const domain = (process.env.AUTH0_ISSUER_BASE_URL || 'https://dev-mindfuels.us.auth0.com').replace(/\/$/, '');
-        const authHeader = req.headers.authorization; // "Bearer <access_token>"
+        const authHeader = req.headers.authorization;
         const { data } = await axios.get(`${domain}/userinfo`, {
           headers: { Authorization: authHeader },
-          timeout: 4000
+          timeout: 5000
         });
-        tokenEmail = data.email;
-        console.log(`[Auth] Got email from /userinfo: ${tokenEmail}`);
+        if (data && data.email) {
+          tokenEmail = data.email;
+          console.log(`[Auth] Got email from /userinfo: ${tokenEmail}`);
+        }
       } catch (uiErr) {
-        console.warn('[Auth] /userinfo fallback failed:', uiErr.message);
+        // Don't block the request — just log and continue
+        console.warn('[Auth] /userinfo call failed (non-fatal):', uiErr.message);
       }
     }
 
