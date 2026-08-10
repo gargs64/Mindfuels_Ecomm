@@ -1,6 +1,7 @@
 import { auth } from 'express-oauth2-jwt-bearer';
 import dotenv from 'dotenv';
 import pool from '../config/db.js';
+import axios from 'axios';
 
 dotenv.config();
 
@@ -33,7 +34,25 @@ export const ensureUser = async (req, res, next) => {
       return res.status(401).json({ error: 'Unauthorized: Missing user identifier in token' });
     }
 
-    const tokenEmail = req.auth.payload.email || req.auth.payload['https://mindfuels.com/email'];
+    let tokenEmail = req.auth.payload.email || req.auth.payload['https://mindfuels.com/email'];
+
+    // ── Auth0 access tokens don't include email by default ──────────────────
+    // If email is missing from JWT, call Auth0 /userinfo to get the real email.
+    // This is the correct OAuth2 way to retrieve the user's email claim.
+    if (!tokenEmail) {
+      try {
+        const domain = (process.env.AUTH0_ISSUER_BASE_URL || 'https://dev-mindfuels.us.auth0.com').replace(/\/$/, '');
+        const authHeader = req.headers.authorization; // "Bearer <access_token>"
+        const { data } = await axios.get(`${domain}/userinfo`, {
+          headers: { Authorization: authHeader },
+          timeout: 4000
+        });
+        tokenEmail = data.email;
+        console.log(`[Auth] Got email from /userinfo: ${tokenEmail}`);
+      } catch (uiErr) {
+        console.warn('[Auth] /userinfo fallback failed:', uiErr.message);
+      }
+    }
 
     // Check if user exists in the DB
     const [users] = await pool.query('SELECT * FROM users WHERE auth0_id = ?', [auth0Id]);
