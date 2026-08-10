@@ -14,6 +14,9 @@ const authConfig = {
 // Middleware to check if JWT is valid
 export const checkJwt = auth(authConfig);
 
+// The only email address authorised to access admin routes
+const ADMIN_EMAIL = 'mindfuelspublisher@gmail.com';
+
 // Middleware to ensure the user exists in our local MySQL database
 export const ensureUser = async (req, res, next) => {
   try {
@@ -57,4 +60,16 @@ export const ensureUser = async (req, res, next) => {
     console.error('Error in ensureUser middleware:', error);
     return res.status(500).json({ error: 'Internal Server Error during user synchronization' });
   }
+};
+
+/**
+ * Middleware: Only allow access if the logged-in user is the Mindfuels admin.
+ * Must be used AFTER checkJwt + ensureUser so req.user is populated.
+ */
+export const requireAdmin = (req, res, next) => {
+  const userEmail = req.user?.email || '';
+  if (userEmail.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+    return res.status(403).json({ error: 'Forbidden: Admin access only.' });
+  }
+  next();
 };

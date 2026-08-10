@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { downloadReceipt } from '../utils/receiptGenerator.js';
+import { useWishlist } from '../context/WishlistContext.jsx';
+import { useCart } from '../context/CartContext.jsx';
 
 export default function Profile({ navigate }) {
   const { isAuthenticated, getAccessTokenSilently, user, loginWithRedirect } = useAuth0();
+  const { wishlistItems, toggleWishlist } = useWishlist();
+  const { addToCart } = useCart();
+
   const [orders, setOrders] = useState([]);
   const [addresses, setAddresses] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('orders'); // 'orders', 'addresses', 'settings'
+  const [activeTab, setActiveTab] = useState('orders'); // 'orders', 'wishlist', 'addresses', 'settings'
   const [editingProfile, setEditingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState({ name: '', phone: '' });
   const [profileMessage, setProfileMessage] = useState('');

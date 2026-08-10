@@ -67,6 +67,9 @@ export default function Navbar({ currentPath, navigate }) {
         {/* Center Links (Desktop only) */}
         <div className="nav-center-links" style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
           <span onClick={() => navigate('/products')} style={{ cursor: 'pointer', fontWeight: 600, color: 'var(--dark)' }}>All Products</span>
+          {user?.email?.toLowerCase() === 'mindfuelspublisher@gmail.com' && (
+            <span onClick={() => navigate('/admin')} style={{ cursor: 'pointer', fontWeight: 700, color: '#FF5A36' }}>🛡️ Admin</span>
+          )}
           
           {/* Class Dropdown */}
           <div className="nav-dropdown-wrapper">
@@ -308,8 +311,12 @@ export default function Navbar({ currentPath, navigate }) {
                           </div>
                         </div>
                       </div>
-                      <div className="account-menu-link" onClick={() => { navigate('/profile'); setAccountMenuOpen(false); }}>Order History</div>
-                      <div className="account-menu-link" onClick={() => { navigate('/profile'); setAccountMenuOpen(false); }}>Addresses</div>
+                      {user?.email?.toLowerCase() === 'mindfuelspublisher@gmail.com' && (
+                        <div className="account-menu-link" onClick={() => { navigate('/admin'); setAccountMenuOpen(false); }} style={{ color: '#FF5A36', fontWeight: 'bold' }}>🛡️ Admin Panel</div>
+                      )}
+                      <div className="account-menu-link" onClick={() => { navigate('/profile?tab=orders'); setAccountMenuOpen(false); }}>Order History</div>
+                      <div className="account-menu-link" onClick={() => { navigate('/profile?tab=wishlist'); setAccountMenuOpen(false); }}>My Wishlist ({wishlistItems.length})</div>
+                      <div className="account-menu-link" onClick={() => { navigate('/profile?tab=addresses'); setAccountMenuOpen(false); }}>Addresses</div>
                       <div className="account-menu-link" onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })} style={{ color: 'var(--error)' }}>Logout</div>
                     </div>
                   )}
@@ -358,6 +365,30 @@ export default function Navbar({ currentPath, navigate }) {
             <path d="M16 10a4 4 0 0 1-8 0"></path>
           </svg>
           Shop
+        </button>
+
+        <button
+          className="mobile-nav-item"
+          onClick={() => {
+            if (isAuthenticated) {
+              navigate('/profile?tab=wishlist');
+            } else {
+              setWishlistMenuOpen(!wishlistMenuOpen);
+            }
+            setMobileMenuOpen(false);
+          }}
+          style={{ position: 'relative' }}
+          aria-label="Wishlist"
+        >
+          {wishlistItems.length > 0 && (
+            <span className="mobile-nav-badge" style={{ background: 'var(--error)' }}>
+              {wishlistItems.length > 9 ? '9+' : wishlistItems.length}
+            </span>
+          )}
+          <svg width="24" height="24" fill={wishlistItems.length > 0 ? "var(--error)" : "none"} stroke={wishlistItems.length > 0 ? "var(--error)" : "currentColor"} strokeWidth="2" viewBox="0 0 24 24">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+          </svg>
+          <span>Wishlist</span>
         </button>
 
         <button

@@ -13,6 +13,7 @@ import AllProducts from './pages/AllProducts.jsx';
 import Cart from './pages/Cart.jsx';
 import Profile from './pages/Profile.jsx';
 import LegalPages from './pages/LegalPages.jsx';
+import Admin from './pages/Admin.jsx';
 
 // Home Elements
 import Hero from './components/Hero.jsx';
@@ -107,6 +108,8 @@ function MainApp() {
         return <Profile navigate={navigate} />;
       case '/legal_pages':
         return <LegalPages />;
+      case '/admin':
+        return <Admin navigate={navigate} />;
       case '/':
       default:
         return (

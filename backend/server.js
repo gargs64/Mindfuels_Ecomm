@@ -20,6 +20,7 @@ import addressRoutes from './routes/addressRoutes.js';
 import checkoutRoutes from './routes/checkoutRoutes.js';
 import pincodeRoutes from './routes/pincodeRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
 
 dotenv.config();
 
@@ -59,6 +60,7 @@ app.use('/api/addresses', addressRoutes);
 app.use('/api/checkout', checkoutRoutes);
 app.use('/api/pincode', pincodeRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/admin', adminRoutes);
 
 import fs from 'fs';
 import path from 'path';
