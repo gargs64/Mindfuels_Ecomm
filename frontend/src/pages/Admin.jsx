@@ -50,22 +50,13 @@ export default function Admin({ navigate }) {
 
     let token = '';
     try {
-      token = await getAccessTokenSilently({
-        authorizationParams: { scope: "openid profile email" }
-      });
+      token = await getAccessTokenSilently();
     } catch (tokenErr) {
       const errCode = tokenErr?.error || tokenErr?.message || 'unknown';
       console.warn('[Admin] Silent token retrieval failed:', errCode);
 
-      // If it's a login_required or consent_required, trigger re-login
-      if (errCode === 'login_required' || errCode === 'consent_required' || errCode === 'interaction_required') {
-        loginWithRedirect({ appState: { returnTo: '/admin' } });
-        return;
-      }
-
-      // For any other error (e.g. network issues during token refresh), show the specific error
-      setError(`Auth error (${errCode}): Please try logging out and back in again.`);
-      setLoadingData(false);
+      // Automatically re-authenticate if token is missing, expired, or refresh token is missing
+      loginWithRedirect({ appState: { returnTo: '/admin' } });
       return;
     }
 
