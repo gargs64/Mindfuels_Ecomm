@@ -216,7 +216,7 @@ export default function Cart({ navigate }) {
 
         const verifyResult = await verifyResponse.json();
         if (verifyResult.success) {
-          setConfirmedOrderDetails(verifyResult);
+          setConfirmedOrderDetails({ ...verifyResult, items: [...cartItems] });
           setOrderConfirmed(true);
           clearLocalCartOnly();
           refreshCart();
@@ -257,7 +257,7 @@ export default function Cart({ navigate }) {
 
               const verifyResult = await verifyResponse.json();
               if (verifyResult.success) {
-                setConfirmedOrderDetails(verifyResult);
+                setConfirmedOrderDetails({ ...verifyResult, items: [...cartItems] });
                 setOrderConfirmed(true);
                 clearLocalCartOnly();
                 refreshCart();
@@ -401,29 +401,42 @@ export default function Cart({ navigate }) {
         </button>
 
         {/* Option 3: WhatsApp Click-to-Chat Button */}
-        <a
-          href={`https://wa.me/919899923670?text=${encodeURIComponent(`Hi Mindfuels! I just placed Order #${confirmedOrderDetails.order_id}. Please confirm my order details.`)}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '10px',
-            width: '100%',
-            padding: '14px 24px',
-            borderRadius: '12px',
-            background: '#25D366',
-            color: '#FFFFFF',
-            fontWeight: 700,
-            fontSize: '1rem',
-            textDecoration: 'none',
-            boxShadow: '0 4px 12px rgba(37, 211, 102, 0.25)',
-            transition: 'all 0.2s ease'
-          }}
-        >
-          <span>💬 Get Order Confirmation on WhatsApp</span>
-        </a>
+        {(() => {
+          const custName = fullName || 'Customer';
+          const ordId = confirmedOrderDetails.order_id;
+          const itemsArr = confirmedOrderDetails.items || cartItems || [];
+          const itemsFormatted = itemsArr.length > 0
+            ? itemsArr.map(i => `${i.title || i.name || 'Book'} (x${i.quantity || i.qty || 1})`).join(', ')
+            : 'Mindfuels Educational Workbooks';
+          
+          const waMessage = `Hi Mindfuels! 👋\n\nThis is *${custName}*. I’ve just placed *Order #${ordId}*.\n\n📦 *Items:* ${itemsFormatted}\n🧾 *Order Receipt:* Tax Invoice PDF Attached\n💳 *Payment Status:* Paid\n\nPlease confirm my order details. Thank you! 😊`;
+
+          return (
+            <a
+              href={`https://wa.me/919899923670?text=${encodeURIComponent(waMessage)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '10px',
+                width: '100%',
+                padding: '14px 24px',
+                borderRadius: '12px',
+                background: '#25D366',
+                color: '#FFFFFF',
+                fontWeight: 700,
+                fontSize: '1rem',
+                textDecoration: 'none',
+                boxShadow: '0 4px 12px rgba(37, 211, 102, 0.25)',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <span>💬 Get Order Confirmation on WhatsApp</span>
+            </a>
+          );
+        })()}
 
         <button onClick={() => navigate('/products')} className="btn btn-secondary" style={{ padding: '12px 30px', width: '100%' }}>
           Continue Shopping
