@@ -249,7 +249,7 @@ export default function Admin({ navigate }) {
               </h1>
             </div>
             <p style={{ color: '#64748b', margin: 0, fontSize: '0.9rem' }}>
-              Welcome, Kirti Bansal · <span style={{ color: '#FF5A36' }}>{ADMIN_EMAIL}</span>
+              Welcome, Admin · <span style={{ color: '#FF5A36' }}>{user?.email || 'mindfuelspublisher@gmail.com'}</span>
             </p>
           </div>
           <button
