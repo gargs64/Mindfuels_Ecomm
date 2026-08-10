@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { useCart } from '../context/CartContext.jsx';
-import { downloadReceipt } from '../utils/receiptGenerator.js';
+import { downloadPdfReceipt } from '../utils/receiptGenerator.js';
 
 export default function Cart({ navigate }) {
   const { isAuthenticated, getAccessTokenSilently, loginWithRedirect } = useAuth0();
@@ -370,7 +370,7 @@ export default function Cart({ navigate }) {
         {/* Option 2.5: Download Order Receipt Button */}
         <button
           onClick={() => {
-            downloadReceipt({
+            downloadPdfReceipt({
               order_id: confirmedOrderDetails.order_id,
               total_amount: totalAmount,
               full_name: fullName,

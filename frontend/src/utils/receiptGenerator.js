@@ -1,17 +1,9 @@
+import html2pdf from 'html2pdf.js';
+
 /**
- * Receipt Generator for Mindfuels Orders
- * Generates and opens a printable / PDF downloadable receipt for an order.
+ * Builds standard HTML string for invoice receipt
  */
-
-export const downloadReceipt = (order) => {
-  if (!order) return;
-
-  const receiptWindow = window.open('', '_blank');
-  if (!receiptWindow) {
-    alert('Please allow popups for this site to view and download your order receipt.');
-    return;
-  }
-
+const buildInvoiceHtml = (order, isStandalone = false) => {
   const items = order.items || [];
   const totalAmount = parseFloat(order.total_amount || 0).toFixed(2);
   const orderId = order.id || order.order_id || 'N/A';
@@ -38,7 +30,94 @@ export const downloadReceipt = (order) => {
   const pincode = order.pincode || '';
   const fullAddress = [addressLine1, addressLine2, city, state, pincode].filter(Boolean).join(', ');
 
-  const html = `
+  const logoUrl = typeof window !== 'undefined' ? `${window.location.origin}/photos/logo.png` : '/photos/logo.png';
+
+  const bodyContent = `
+    <div class="invoice-box" id="invoice-content" style="max-width: 800px; margin: auto; padding: 36px; border: 1px solid #E2E8F0; border-radius: 16px; background: #FFFFFF; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1E293B;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #FF5A36; padding-bottom: 20px; margin-bottom: 24px;">
+        <div>
+          <img src="${logoUrl}" alt="Mindfuels Logo" style="height: 46px; object-fit: contain; display: block; margin-bottom: 6px;" />
+          <div style="font-size: 13px; color: #64748B; margin-top: 4px; font-weight: 500;">Trustworthy Children's Books & Activity Workbooks</div>
+        </div>
+        <div style="font-size: 22px; font-weight: 800; color: #1E293B; text-align: right;">
+          TAX INVOICE
+          <div><span style="display: inline-block; background: #ECFDF5; color: #10B981; border: 1px solid rgba(16,185,129,0.3); padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; text-transform: uppercase; margin-top: 6px;">PAYMENT CONFIRMED</span></div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 28px;">
+        <div style="background: #F8FAFC; padding: 16px; border-radius: 12px; border: 1px solid #E2E8F0; font-size: 13px; line-height: 1.6;">
+          <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #64748B; margin-bottom: 8px;">Order Information</div>
+          <div><strong>Order Ref:</strong> #${orderId}</div>
+          <div><strong>Date & Time:</strong> ${orderDate}</div>
+          <div><strong>Payment Mode:</strong> Prepaid (Online Razorpay)</div>
+          ${order.payment_id ? `<div><strong>Transaction Ref:</strong> <code>${order.payment_id}</code></div>` : ''}
+        </div>
+
+        <div style="background: #F8FAFC; padding: 16px; border-radius: 12px; border: 1px solid #E2E8F0; font-size: 13px; line-height: 1.6;">
+          <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: #64748B; margin-bottom: 8px;">Delivery Address</div>
+          <div><strong>${customerName}</strong></div>
+          ${phone ? `<div>Contact: +91 ${phone}</div>` : ''}
+          <div style="margin-top: 4px; color: #475569;">${fullAddress || 'Address details registered in account.'}</div>
+        </div>
+      </div>
+
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 28px;">
+        <thead>
+          <tr>
+            <th style="background: #F1F5F9; color: #475569; font-weight: 700; font-size: 12px; text-transform: uppercase; text-align: left; padding: 12px 14px; border-bottom: 2px solid #CBD5E1; width: 40px;">#</th>
+            <th style="background: #F1F5F9; color: #475569; font-weight: 700; font-size: 12px; text-transform: uppercase; text-align: left; padding: 12px 14px; border-bottom: 2px solid #CBD5E1;">Book Title / Item</th>
+            <th style="background: #F1F5F9; color: #475569; font-weight: 700; font-size: 12px; text-transform: uppercase; text-align: center; padding: 12px 14px; border-bottom: 2px solid #CBD5E1; width: 70px;">Qty</th>
+            <th style="background: #F1F5F9; color: #475569; font-weight: 700; font-size: 12px; text-transform: uppercase; text-align: right; padding: 12px 14px; border-bottom: 2px solid #CBD5E1; width: 110px;">Price</th>
+            <th style="background: #F1F5F9; color: #475569; font-weight: 700; font-size: 12px; text-transform: uppercase; text-align: right; padding: 12px 14px; border-bottom: 2px solid #CBD5E1; width: 110px;">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${items.length > 0 ? items.map((item, idx) => `
+            <tr>
+              <td style="padding: 14px; font-size: 13px; border-bottom: 1px solid #E2E8F0;">${idx + 1}</td>
+              <td style="padding: 14px; font-size: 13px; border-bottom: 1px solid #E2E8F0;"><strong>${item.title || item.name || 'Mindfuels Book/Workbook'}</strong></td>
+              <td style="padding: 14px; font-size: 13px; border-bottom: 1px solid #E2E8F0; text-align: center;">${item.quantity || item.qty || 1}</td>
+              <td style="padding: 14px; font-size: 13px; border-bottom: 1px solid #E2E8F0; text-align: right;">₹${parseFloat(item.price || item.sp || 0).toFixed(2)}</td>
+              <td style="padding: 14px; font-size: 13px; border-bottom: 1px solid #E2E8F0; text-align: right;">₹${(parseFloat(item.price || item.sp || 0) * (item.quantity || item.qty || 1)).toFixed(2)}</td>
+            </tr>
+          `).join('') : `
+            <tr>
+              <td style="padding: 14px; font-size: 13px; border-bottom: 1px solid #E2E8F0;">1</td>
+              <td style="padding: 14px; font-size: 13px; border-bottom: 1px solid #E2E8F0;"><strong>Mindfuels Order Catalog Items</strong></td>
+              <td style="padding: 14px; font-size: 13px; border-bottom: 1px solid #E2E8F0; text-align: center;">1</td>
+              <td style="padding: 14px; font-size: 13px; border-bottom: 1px solid #E2E8F0; text-align: right;">₹${totalAmount}</td>
+              <td style="padding: 14px; font-size: 13px; border-bottom: 1px solid #E2E8F0; text-align: right;">₹${totalAmount}</td>
+            </tr>
+          `}
+        </tbody>
+      </table>
+
+      <div style="margin-left: auto; width: 300px; font-size: 14px;">
+        <div style="display: flex; justify-content: space-between; padding: 8px 0; color: #475569;">
+          <span>Items Subtotal:</span>
+          <span>₹${totalAmount}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 8px 0; color: #475569;">
+          <span>Shipping & Delivery:</span>
+          <span style="color: #10B981; font-weight: 700;">FREE</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; padding: 12px 0 0 0; font-weight: 800; font-size: 18px; color: #FF5A36; border-top: 2px solid #E2E8F0; margin-top: 8px;">
+          <span>Total Paid:</span>
+          <span>₹${totalAmount}</span>
+        </div>
+      </div>
+
+      <div style="text-align: center; margin-top: 36px; padding-top: 24px; border-top: 1px solid #E2E8F0; color: #64748B; font-size: 12px; line-height: 1.6;">
+        <p style="margin: 0 0 6px 0;">Thank you for shopping with <strong>Mindfuels</strong>!</p>
+        <p style="margin: 0;">For queries or support, reach out to us at <strong>support@mindfuelspublisher.com</strong> or WhatsApp <strong>+91 9899923670</strong></p>
+      </div>
+    </div>
+  `;
+
+  if (!isStandalone) return bodyContent;
+
+  return `
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -46,432 +125,72 @@ export const downloadReceipt = (order) => {
       <title>Invoice_Receipt_Order_${orderId}_Mindfuels</title>
       <style>
         * { box-sizing: border-box; }
-        body {
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-          color: #1E293B;
-          margin: 0;
-          padding: 40px 20px;
-          background: #F8FAFC;
-        }
-        .invoice-box {
-          max-width: 800px;
-          margin: auto;
-          padding: 36px;
-          border: 1px solid #E2E8F0;
-          border-radius: 16px;
-          background: #FFFFFF;
-          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
-        }
-        .header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          border-bottom: 2px solid #FF5A36;
-          padding-bottom: 20px;
-          margin-bottom: 24px;
-        }
-        .brand {
-          font-size: 30px;
-          font-weight: 900;
-          color: #FF5A36;
-          letter-spacing: -0.5px;
-        }
-        .brand span { color: #4A90E2; }
-        .subtitle {
-          font-size: 13px;
-          color: #64748B;
-          margin-top: 4px;
-          font-weight: 500;
-        }
-        .invoice-title {
-          font-size: 22px;
-          font-weight: 800;
-          color: #1E293B;
-          text-align: right;
-        }
-        .badge-paid {
-          display: inline-block;
-          background: #ECFDF5;
-          color: #10B981;
-          border: 1px solid rgba(16,185,129,0.3);
-          padding: 4px 12px;
-          border-radius: 20px;
-          font-size: 11px;
-          font-weight: 800;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          margin-top: 6px;
-        }
-        .details-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 20px;
-          margin-bottom: 28px;
-        }
-        .section-title {
-          font-size: 11px;
-          font-weight: 800;
-          text-transform: uppercase;
-          color: #64748B;
-          margin-bottom: 8px;
-          letter-spacing: 0.8px;
-        }
-        .info-card {
-          background: #F8FAFC;
-          padding: 16px;
-          border-radius: 12px;
-          border: 1px solid #E2E8F0;
-          font-size: 13px;
-          line-height: 1.6;
-        }
-        table {
-          width: 100%;
-          border-collapse: collapse;
-          margin-bottom: 28px;
-        }
-        th {
-          background: #F1F5F9;
-          color: #475569;
-          font-weight: 700;
-          font-size: 12px;
-          text-transform: uppercase;
-          text-align: left;
-          padding: 12px 14px;
-          border-bottom: 2px solid #CBD5E1;
-        }
-        td {
-          padding: 14px;
-          font-size: 13px;
-          border-bottom: 1px solid #E2E8F0;
-        }
-        .summary-box {
-          margin-left: auto;
-          width: 300px;
-          font-size: 14px;
-        }
-        .summary-row {
-          display: flex;
-          justify-content: space-between;
-          padding: 8px 0;
-          color: #475569;
-        }
-        .grand-total {
-          font-weight: 800;
-          font-size: 18px;
-          color: #FF5A36;
-          border-top: 2px solid #E2E8F0;
-          padding-top: 12px;
-          margin-top: 8px;
-        }
-        .footer {
-          text-align: center;
-          margin-top: 36px;
-          padding-top: 24px;
-          border-top: 1px solid #E2E8F0;
-          color: #64748B;
-          font-size: 12px;
-          line-height: 1.6;
-        }
-        .actions-bar {
-          display: flex;
-          gap: 12px;
-          margin-bottom: 24px;
-          justify-content: flex-end;
-        }
-        .print-btn {
-          background: linear-gradient(135deg, #FF7E5F 0%, #FF5A36 100%);
-          color: #FFFFFF;
-          border: none;
-          padding: 10px 24px;
-          font-weight: 700;
-          border-radius: 50px;
-          cursor: pointer;
-          font-size: 14px;
-          box-shadow: 0 4px 12px rgba(255, 90, 54, 0.3);
-          transition: transform 0.2s;
-        }
-        .print-btn:hover { transform: translateY(-2px); }
-        @media print {
-          body { background: #fff; padding: 0; }
-          .invoice-box { border: none; boxShadow: none; padding: 0; }
-          .actions-bar { display: none !important; }
-        }
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-      <style>
-        * { box-sizing: border-box; }
-        body {
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-          color: #1E293B;
-          margin: 0;
-          padding: 40px 20px;
-          background: #F8FAFC;
-        }
-        .invoice-box {
-          max-width: 800px;
-          margin: auto;
-          padding: 36px;
-          border: 1px solid #E2E8F0;
-          border-radius: 16px;
-          background: #FFFFFF;
-          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
-        }
-        .header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          border-bottom: 2px solid #FF5A36;
-          padding-bottom: 20px;
-          margin-bottom: 24px;
-        }
-        .brand {
-          font-size: 30px;
-          font-weight: 900;
-          color: #FF5A36;
-          letter-spacing: -0.5px;
-        }
-        .brand span { color: #4A90E2; }
-        .subtitle {
-          font-size: 13px;
-          color: #64748B;
-          margin-top: 4px;
-          font-weight: 500;
-        }
-        .invoice-title {
-          font-size: 22px;
-          font-weight: 800;
-          color: #1E293B;
-          text-align: right;
-        }
-        .badge-paid {
-          display: inline-block;
-          background: #ECFDF5;
-          color: #10B981;
-          border: 1px solid rgba(16,185,129,0.3);
-          padding: 4px 12px;
-          border-radius: 20px;
-          font-size: 11px;
-          font-weight: 800;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          margin-top: 6px;
-        }
-        .details-grid {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 20px;
-          margin-bottom: 28px;
-        }
-        .section-title {
-          font-size: 11px;
-          font-weight: 800;
-          text-transform: uppercase;
-          color: #64748B;
-          margin-bottom: 8px;
-          letter-spacing: 0.8px;
-        }
-        .info-card {
-          background: #F8FAFC;
-          padding: 16px;
-          border-radius: 12px;
-          border: 1px solid #E2E8F0;
-          font-size: 13px;
-          line-height: 1.6;
-        }
-        table {
-          width: 100%;
-          border-collapse: collapse;
-          margin-bottom: 28px;
-        }
-        th {
-          background: #F1F5F9;
-          color: #475569;
-          font-weight: 700;
-          font-size: 12px;
-          text-transform: uppercase;
-          text-align: left;
-          padding: 12px 14px;
-          border-bottom: 2px solid #CBD5E1;
-        }
-        td {
-          padding: 14px;
-          font-size: 13px;
-          border-bottom: 1px solid #E2E8F0;
-        }
-        .summary-box {
-          margin-left: auto;
-          width: 300px;
-          font-size: 14px;
-        }
-        .summary-row {
-          display: flex;
-          justify-content: space-between;
-          padding: 8px 0;
-          color: #475569;
-        }
-        .grand-total {
-          font-weight: 800;
-          font-size: 18px;
-          color: #FF5A36;
-          border-top: 2px solid #E2E8F0;
-          padding-top: 12px;
-          margin-top: 8px;
-        }
-        .footer {
-          text-align: center;
-          margin-top: 36px;
-          padding-top: 24px;
-          border-top: 1px solid #E2E8F0;
-          color: #64748B;
-          font-size: 12px;
-          line-height: 1.6;
-        }
-        .actions-bar {
-          display: flex;
-          gap: 12px;
-          margin-bottom: 24px;
-          justify-content: flex-end;
-        }
-        .btn-action {
-          color: #FFFFFF;
-          border: none;
-          padding: 10px 24px;
-          font-weight: 700;
-          border-radius: 50px;
-          cursor: pointer;
-          font-size: 14px;
-          transition: transform 0.2s;
-        }
-        .btn-download {
-          background: linear-gradient(135deg, #10B981 0%, #059669 100%);
-          box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-        }
-        .btn-print {
-          background: linear-gradient(135deg, #FF7E5F 0%, #FF5A36 100%);
-          box-shadow: 0 4px 12px rgba(255, 90, 54, 0.3);
-        }
-        .btn-action:hover { transform: translateY(-2px); }
-        @media print {
-          body { background: #fff; padding: 0; }
-          .invoice-box { border: none; boxShadow: none; padding: 0; }
-          .actions-bar { display: none !important; }
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #F8FAFC; margin: 0; padding: 40px 20px; }
+        .actions-bar { display: flex; gap: 12px; margin-bottom: 24px; justify-content: flex-end; max-width: 800px; margin-left: auto; margin-right: auto; }
+        .btn-action { color: #FFFFFF; border: none; padding: 10px 24px; font-weight: 700; border-radius: 50px; cursor: pointer; font-size: 14px; }
+        .btn-print { background: linear-gradient(135deg, #FF7E5F 0%, #FF5A36 100%); box-shadow: 0 4px 12px rgba(255, 90, 54, 0.3); }
+        @media print { body { background: #fff; padding: 0; } .invoice-box { border: none !important; box-shadow: none !important; padding: 0 !important; } .actions-bar { display: none !important; } }
       </style>
     </head>
     <body>
       <div class="actions-bar">
-        <button class="btn-action btn-download" onclick="downloadPdfFile()">📥 Download PDF File</button>
         <button class="btn-action btn-print" onclick="window.print()">🖨️ Print Receipt</button>
       </div>
-
-      <div class="invoice-box" id="invoice-content">
-        <div class="header">
-          <div>
-            <img src="${window.location.origin}/photos/logo.png" alt="Mindfuels Logo" style="height: 46px; object-fit: contain; display: block; margin-bottom: 6px;" />
-            <div class="subtitle">Trustworthy Children's Books & Activity Workbooks</div>
-          </div>
-          <div class="invoice-title">
-            TAX INVOICE
-            <div><span class="badge-paid">PAYMENT CONFIRMED</span></div>
-          </div>
-        </div>
-
-        <div class="details-grid">
-          <div class="info-card">
-            <div class="section-title">Order Information</div>
-            <div><strong>Order Ref:</strong> #${orderId}</div>
-            <div><strong>Date & Time:</strong> ${orderDate}</div>
-            <div><strong>Payment Mode:</strong> Prepaid (Online Razorpay)</div>
-            ${order.payment_id ? `<div><strong>Transaction Ref:</strong> <code>${order.payment_id}</code></div>` : ''}
-          </div>
-
-          <div class="info-card">
-            <div class="section-title">Delivery Address</div>
-            <div><strong>${customerName}</strong></div>
-            ${phone ? `<div>Contact: +91 ${phone}</div>` : ''}
-            <div style="margin-top: 4px; color: #475569;">${fullAddress || 'Address details registered in account.'}</div>
-          </div>
-        </div>
-
-        <table>
-          <thead>
-            <tr>
-              <th style="width: 40px;">#</th>
-              <th>Book Title / Item</th>
-              <th style="text-align: center; width: 70px;">Qty</th>
-              <th style="text-align: right; width: 110px;">Price</th>
-              <th style="text-align: right; width: 110px;">Subtotal</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${items.length > 0 ? items.map((item, idx) => `
-              <tr>
-                <td>${idx + 1}</td>
-                <td><strong>${item.title || item.name || 'Mindfuels Book/Workbook'}</strong></td>
-                <td style="text-align: center;">${item.quantity || item.qty || 1}</td>
-                <td style="text-align: right;">₹${parseFloat(item.price || item.sp || 0).toFixed(2)}</td>
-                <td style="text-align: right;">₹${(parseFloat(item.price || item.sp || 0) * (item.quantity || item.qty || 1)).toFixed(2)}</td>
-              </tr>
-            `).join('') : `
-              <tr>
-                <td>1</td>
-                <td><strong>Mindfuels Order Catalog Items</strong></td>
-                <td style="text-align: center;">1</td>
-                <td style="text-align: right;">₹${totalAmount}</td>
-                <td style="text-align: right;">₹${totalAmount}</td>
-              </tr>
-            `}
-          </tbody>
-        </table>
-
-        <div class="summary-box">
-          <div class="summary-row">
-            <span>Items Subtotal:</span>
-            <span>₹${totalAmount}</span>
-          </div>
-          <div class="summary-row">
-            <span>Shipping & Delivery:</span>
-            <span style="color: #10B981; font-weight: 700;">FREE</span>
-          </div>
-          <div class="summary-row grand-total">
-            <span>Total Paid:</span>
-            <span>₹${totalAmount}</span>
-          </div>
-        </div>
-
-        <div class="footer">
-          <p style="margin: 0 0 6px 0;">Thank you for shopping with <strong>Mindfuels</strong>!</p>
-          <p style="margin: 0;">For queries or support, reach out to us at <strong>support@mindfuelspublisher.com</strong> or WhatsApp <strong>+91 9899923670</strong></p>
-        </div>
-      </div>
-
-      <script>
-        function downloadPdfFile() {
-          const btn = document.querySelector('.btn-download');
-          if (btn) btn.innerText = '⏳ Generating PDF...';
-          const element = document.getElementById('invoice-content');
-          const opt = {
-            margin:       8,
-            filename:     'Mindfuels_Invoice_Order_${orderId}.pdf',
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true, logging: false },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-          };
-          if (window.html2pdf) {
-            html2pdf().set(opt).from(element).save().then(function() {
-              if (btn) btn.innerText = '📥 Download PDF File';
-            }).catch(function() {
-              if (btn) btn.innerText = '📥 Download PDF File';
-              window.print();
-            });
-          } else {
-            window.print();
-          }
-        }
-      </script>
+      ${bodyContent}
     </body>
     </html>
   `;
+};
 
+/**
+ * AUTOMATIC DIRECT PDF FILE DOWNLOAD (0 Popups, 0 Print Dialogs)
+ * Compiles the receipt in memory and triggers direct file download of .pdf
+ */
+export const downloadPdfReceipt = async (order) => {
+  if (!order) return;
+  const orderId = order.id || order.order_id || 'N/A';
+
+  // Create temporary offscreen container
+  const container = document.createElement('div');
+  container.style.position = 'fixed';
+  container.style.top = '-9999px';
+  container.style.left = '-9999px';
+  container.style.width = '800px';
+  container.innerHTML = buildInvoiceHtml(order, false);
+  document.body.appendChild(container);
+
+  const opt = {
+    margin:       10,
+    filename:     `Mindfuels_Invoice_Order_${orderId}.pdf`,
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { scale: 2, useCORS: true, logging: false },
+    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  try {
+    await html2pdf().set(opt).from(container.firstElementChild).save();
+  } catch (err) {
+    console.error('[ReceiptGenerator] Direct PDF download failed:', err);
+    // Fallback to opening printable view window if canvas fails
+    downloadReceipt(order);
+  } finally {
+    document.body.removeChild(container);
+  }
+};
+
+/**
+ * Standard Printable View Window
+ */
+export const downloadReceipt = (order) => {
+  if (!order) return;
+
+  const receiptWindow = window.open('', '_blank');
+  if (!receiptWindow) {
+    alert('Please allow popups for this site to view your order receipt.');
+    return;
+  }
+
+  const html = buildInvoiceHtml(order, true);
   receiptWindow.document.open();
   receiptWindow.document.write(html);
   receiptWindow.document.close();

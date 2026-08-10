@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
-import { downloadReceipt } from '../utils/receiptGenerator.js';
+import { downloadPdfReceipt } from '../utils/receiptGenerator.js';
 import { useWishlist } from '../context/WishlistContext.jsx';
 import { useCart } from '../context/CartContext.jsx';
 
@@ -326,7 +326,7 @@ export default function Profile({ navigate }) {
 
                   {/* Download Receipt Action Button */}
                   <button
-                    onClick={() => downloadReceipt(order)}
+                    onClick={() => downloadPdfReceipt(order)}
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',

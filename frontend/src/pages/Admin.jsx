@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
-import { downloadReceipt } from '../utils/receiptGenerator.js';
+import { downloadReceipt, downloadPdfReceipt } from '../utils/receiptGenerator.js';
 
 const ADMIN_EMAILS = [
   'mindfuelspublisher@gmail.com',
@@ -407,7 +407,19 @@ export default function Admin({ navigate }) {
                       <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }} onClick={e => e.stopPropagation()}>
                         <button
                           className="admin-btn"
-                          title="Download PDF receipt for this order"
+                          title="Direct automatic PDF file download"
+                          onClick={() => downloadPdfReceipt({
+                            ...order,
+                            order_id: order.id,
+                            items: order.items || [],
+                          })}
+                          style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.3)', padding: '5px 10px' }}
+                        >
+                          📥 PDF
+                        </button>
+                        <button
+                          className="admin-btn"
+                          title="Print / view printable receipt"
                           onClick={() => downloadReceipt({
                             ...order,
                             order_id: order.id,
@@ -415,7 +427,7 @@ export default function Admin({ navigate }) {
                           })}
                           style={{ background: 'rgba(255,90,54,0.15)', color: '#FF7E5F', border: '1px solid rgba(255,90,54,0.25)', padding: '5px 10px' }}
                         >
-                          📄 Receipt
+                          🖨️ Print
                         </button>
                         {hasGoodAwb && (
                           <a
