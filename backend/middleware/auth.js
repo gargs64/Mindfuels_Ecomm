@@ -12,8 +12,15 @@ const authConfig = {
   tokenSigningAlg: 'RS256'
 };
 
-// Middleware to check if JWT is valid
-export const checkJwt = auth(authConfig);
+const jwtAuth = auth(authConfig);
+
+// Middleware to check if JWT is valid (bypasses OPTIONS preflight requests)
+export const checkJwt = (req, res, next) => {
+  if (req.method === 'OPTIONS') {
+    return next();
+  }
+  return jwtAuth(req, res, next);
+};
 
 // Authorised admin email addresses
 const ADMIN_EMAILS = [
@@ -23,6 +30,7 @@ const ADMIN_EMAILS = [
 
 // Middleware to ensure the user exists in our local MySQL database
 export const ensureUser = async (req, res, next) => {
+  if (req.method === 'OPTIONS') return next();
   try {
     // req.auth is populated by checkJwt
     if (!req.auth || !req.auth.payload) {
@@ -97,6 +105,7 @@ export const ensureUser = async (req, res, next) => {
  * Must be used AFTER checkJwt + ensureUser so req.user is populated.
  */
 export const requireAdmin = (req, res, next) => {
+  if (req.method === 'OPTIONS') return next();
   const tokenEmail = req.auth?.payload?.email || req.auth?.payload['https://mindfuels.com/email'] || '';
   const userEmail = (req.user?.email || tokenEmail).toLowerCase().trim();
 
