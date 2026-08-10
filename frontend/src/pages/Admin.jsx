@@ -42,8 +42,19 @@ export default function Admin({ navigate }) {
   const fetchData = useCallback(async () => {
     setLoadingData(true);
     setError('');
+
+    let token = '';
     try {
-      const token = await getAccessTokenSilently();
+      token = await getAccessTokenSilently({
+        authorizationParams: { scope: "openid profile email" }
+      });
+    } catch (tokenErr) {
+      console.warn('[Admin] Silent token retrieval failed, triggering re-login:', tokenErr.message);
+      loginWithRedirect({ appState: { returnTo: '/admin' } });
+      return;
+    }
+
+    try {
       const headers = { Authorization: `Bearer ${token}` };
 
       const [statsRes, ordersRes] = await Promise.all([
@@ -52,16 +63,19 @@ export default function Admin({ navigate }) {
       ]);
 
       if (statsRes.status === 403 || ordersRes.status === 403) {
+        console.warn('[Admin] Received 403 Forbidden. Redirecting to home.');
         navigate('/');
+        return;
+      }
+
+      if (statsRes.status === 401 || ordersRes.status === 401) {
+        console.warn('[Admin] Received 401 Unauthorized. Triggering re-login.');
+        loginWithRedirect({ appState: { returnTo: '/admin' } });
         return;
       }
 
       if (!statsRes.ok || !ordersRes.ok) {
         const failedRes = !statsRes.ok ? statsRes : ordersRes;
-        if (failedRes.status === 404) {
-          setError('Backend Admin routes are not active on the server. Please pull the latest code on Hostinger and restart the server.');
-          return;
-        }
         const errJson = await failedRes.json().catch(() => ({}));
         setError(`Failed to load admin data (${failedRes.status}): ${errJson.error || 'Server error. Please refresh.'}`);
         return;
@@ -70,12 +84,12 @@ export default function Admin({ navigate }) {
       setStats(await statsRes.json());
       setOrders(await ordersRes.json());
     } catch (err) {
-      setError('Failed to load admin data. Please check your internet connection and refresh.');
+      setError(`Connection error: ${err.message}. Please check your internet connection and refresh.`);
       console.error('[Admin]', err);
     } finally {
       setLoadingData(false);
     }
-  }, [API_URL, getAccessTokenSilently, navigate]);
+  }, [API_URL, getAccessTokenSilently, loginWithRedirect, navigate]);
 
   // ─── DERIVED DATA ─────────────────────────────────────────────────────────────
   const filteredOrders = orders.filter(order => {
