@@ -20,30 +20,6 @@ export default function Admin({ navigate }) {
 
   const API_URL = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000');
 
-  // ─── ACCESS GUARD ────────────────────────────────────────────────────────────
-  // Wait for Auth0 to finish loading before making any access decision
-  useEffect(() => {
-    if (isLoading) return;
-
-    if (!isAuthenticated) {
-      // Not logged in → send to Auth0 login, then come back to /admin
-      loginWithRedirect({ appState: { returnTo: '/admin' } });
-      return;
-    }
-
-    const email = (user?.email || '').toLowerCase().trim();
-    const isAdmin = ADMIN_EMAILS.some(e => e.toLowerCase() === email);
-
-    if (!email || !isAdmin) {
-      // Logged in but NOT an admin → redirect home immediately
-      navigate('/');
-      return;
-    }
-
-    // Admin confirmed → fetch data
-    fetchData();
-  }, [isLoading, isAuthenticated, user]);
-
   const fetchData = useCallback(async () => {
     setLoadingData(true);
     setError('');
@@ -96,6 +72,32 @@ export default function Admin({ navigate }) {
       setLoadingData(false);
     }
   }, [API_URL, getAccessTokenSilently, loginWithRedirect, navigate]);
+
+  // ─── ACCESS GUARD ────────────────────────────────────────────────────────────
+  // Wait for Auth0 to finish loading before making any access decision
+  useEffect(() => {
+    if (isLoading) return;
+
+    if (!isAuthenticated) {
+      // Not logged in → send to Auth0 login, then come back to /admin
+      loginWithRedirect({ appState: { returnTo: '/admin' } });
+      return;
+    }
+
+    const email = (user?.email || '').toLowerCase().trim();
+    const isAdmin = ADMIN_EMAILS.some(e => e.toLowerCase() === email);
+
+    if (!email || !isAdmin) {
+      // Logged in but NOT an admin → redirect home immediately
+      navigate('/');
+      return;
+    }
+
+    // Admin confirmed → fetch data
+    fetchData();
+  }, [isLoading, isAuthenticated, user, fetchData]);
+
+
 
   // ─── DERIVED DATA ─────────────────────────────────────────────────────────────
   const filteredOrders = orders.filter(order => {
