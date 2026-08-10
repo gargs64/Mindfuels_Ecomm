@@ -67,7 +67,7 @@ export default function Navbar({ currentPath, navigate }) {
         {/* Center Links (Desktop only) */}
         <div className="nav-center-links" style={{ display: 'flex', gap: '24px', alignItems: 'center' }}>
           <span onClick={() => navigate('/products')} style={{ cursor: 'pointer', fontWeight: 600, color: 'var(--dark)' }}>All Products</span>
-          {user?.email?.toLowerCase() === 'mindfuelspublisher@gmail.com' && (
+          {user?.email && ['mindfuelspublisher@gmail.com', 'gargpshruti@gmail.com'].includes(user.email.toLowerCase()) && (
             <span onClick={() => navigate('/admin')} style={{ cursor: 'pointer', fontWeight: 700, color: '#FF5A36' }}>🛡️ Admin</span>
           )}
           
@@ -311,7 +311,7 @@ export default function Navbar({ currentPath, navigate }) {
                           </div>
                         </div>
                       </div>
-                      {user?.email?.toLowerCase() === 'mindfuelspublisher@gmail.com' && (
+                      {user?.email && ['mindfuelspublisher@gmail.com', 'gargpshruti@gmail.com'].includes(user.email.toLowerCase()) && (
                         <div className="account-menu-link" onClick={() => { navigate('/admin'); setAccountMenuOpen(false); }} style={{ color: '#FF5A36', fontWeight: 'bold' }}>🛡️ Admin Panel</div>
                       )}
                       <div className="account-menu-link" onClick={() => { navigate('/profile?tab=orders'); setAccountMenuOpen(false); }}>Order History</div>

@@ -14,8 +14,11 @@ const authConfig = {
 // Middleware to check if JWT is valid
 export const checkJwt = auth(authConfig);
 
-// The only email address authorised to access admin routes
-const ADMIN_EMAIL = 'mindfuelspublisher@gmail.com';
+// Authorised admin email addresses
+const ADMIN_EMAILS = [
+  'mindfuelspublisher@gmail.com',
+  'gargpshruti@gmail.com'
+];
 
 // Middleware to ensure the user exists in our local MySQL database
 export const ensureUser = async (req, res, next) => {
@@ -74,9 +77,11 @@ export const ensureUser = async (req, res, next) => {
  */
 export const requireAdmin = (req, res, next) => {
   const tokenEmail = req.auth?.payload?.email || req.auth?.payload['https://mindfuels.com/email'] || '';
-  const userEmail = req.user?.email || tokenEmail;
+  const userEmail = (req.user?.email || tokenEmail).toLowerCase().trim();
 
-  if (!userEmail || userEmail.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+  const isAdmin = ADMIN_EMAILS.some(e => e.toLowerCase() === userEmail);
+
+  if (!userEmail || !isAdmin) {
     return res.status(403).json({ error: 'Forbidden: Admin access only.' });
   }
   next();

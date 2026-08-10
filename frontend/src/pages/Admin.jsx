@@ -2,7 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { downloadReceipt } from '../utils/receiptGenerator.js';
 
-const ADMIN_EMAIL = 'mindfuelspublisher@gmail.com';
+const ADMIN_EMAILS = [
+  'mindfuelspublisher@gmail.com',
+  'gargpshruti@gmail.com'
+];
 
 export default function Admin({ navigate }) {
   const { isAuthenticated, isLoading, user, getAccessTokenSilently, loginWithRedirect } = useAuth0();
@@ -28,9 +31,11 @@ export default function Admin({ navigate }) {
       return;
     }
 
-    const email = user?.email || '';
-    if (email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
-      // Logged in but NOT the admin → redirect home immediately
+    const email = (user?.email || '').toLowerCase().trim();
+    const isAdmin = ADMIN_EMAILS.some(e => e.toLowerCase() === email);
+
+    if (!email || !isAdmin) {
+      // Logged in but NOT an admin → redirect home immediately
       navigate('/');
       return;
     }
