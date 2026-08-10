@@ -18,7 +18,7 @@ export default function Admin({ navigate }) {
   const [filterStatus, setFilterStatus] = useState('all');
   const [error, setError] = useState('');
 
-  const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+  const API_URL = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000');
 
   // ─── ACCESS GUARD ────────────────────────────────────────────────────────────
   // Wait for Auth0 to finish loading before making any access decision

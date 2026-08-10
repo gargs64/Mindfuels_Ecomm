@@ -16,7 +16,7 @@ export default function AllProducts({ onProductClick, navigate }) {
   
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+  const API_URL = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000');
 
   // Constants
   const classesList = [
