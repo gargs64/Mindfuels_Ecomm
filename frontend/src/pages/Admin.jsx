@@ -56,10 +56,21 @@ export default function Admin({ navigate }) {
         return;
       }
 
-      if (statsRes.ok) setStats(await statsRes.json());
-      if (ordersRes.ok) setOrders(await ordersRes.json());
+      if (!statsRes.ok || !ordersRes.ok) {
+        const failedRes = !statsRes.ok ? statsRes : ordersRes;
+        if (failedRes.status === 404) {
+          setError('Backend Admin routes are not active on the server. Please pull the latest code on Hostinger and restart the server.');
+          return;
+        }
+        const errJson = await failedRes.json().catch(() => ({}));
+        setError(`Failed to load admin data (${failedRes.status}): ${errJson.error || 'Server error. Please refresh.'}`);
+        return;
+      }
+
+      setStats(await statsRes.json());
+      setOrders(await ordersRes.json());
     } catch (err) {
-      setError('Failed to load admin data. Please refresh.');
+      setError('Failed to load admin data. Please check your internet connection and refresh.');
       console.error('[Admin]', err);
     } finally {
       setLoadingData(false);

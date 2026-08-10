@@ -30,14 +30,15 @@ export const ensureUser = async (req, res, next) => {
       return res.status(401).json({ error: 'Unauthorized: Missing user identifier in token' });
     }
 
+    const tokenEmail = req.auth.payload.email || req.auth.payload['https://mindfuels.com/email'];
+
     // Check if user exists in the DB
     const [users] = await pool.query('SELECT * FROM users WHERE auth0_id = ?', [auth0Id]);
 
     let user = null;
     if (users.length === 0) {
       // User doesn't exist, let's create a new record
-      // Try to get email/name from common claims or custom claims if present
-      const email = req.auth.payload.email || req.auth.payload['https://mindfuels.com/email'] || `${auth0Id}@temporary.mindfuels.com`;
+      const email = tokenEmail || `${auth0Id}@temporary.mindfuels.com`;
       const name = req.auth.payload.name || req.auth.payload['https://mindfuels.com/name'] || 'Mindfuels Reader';
       
       const [result] = await pool.query(
@@ -50,6 +51,11 @@ export const ensureUser = async (req, res, next) => {
       console.log(`Created new user for Auth0 ID: ${auth0Id}`);
     } else {
       user = users[0];
+      // If token contains real email and DB currently has temporary/different email, sync it
+      if (tokenEmail && user.email !== tokenEmail) {
+        await pool.query('UPDATE users SET email = ? WHERE id = ?', [tokenEmail, user.id]);
+        user.email = tokenEmail;
+      }
     }
 
     // Attach user record and local ID to request context
@@ -67,8 +73,10 @@ export const ensureUser = async (req, res, next) => {
  * Must be used AFTER checkJwt + ensureUser so req.user is populated.
  */
 export const requireAdmin = (req, res, next) => {
-  const userEmail = req.user?.email || '';
-  if (userEmail.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+  const tokenEmail = req.auth?.payload?.email || req.auth?.payload['https://mindfuels.com/email'] || '';
+  const userEmail = req.user?.email || tokenEmail;
+
+  if (!userEmail || userEmail.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
     return res.status(403).json({ error: 'Forbidden: Admin access only.' });
   }
   next();
