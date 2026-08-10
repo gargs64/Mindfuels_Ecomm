@@ -156,19 +156,47 @@ export default function AllProducts({ onProductClick, navigate }) {
 
   return (
     <div className="container" style={{ padding: '40px 20px 80px 20px', fontFamily: 'var(--font-body)' }}>
+      {/* Dedicated Prominent Mobile Filter Button */}
+      <div className="mobile-filter-bar" style={{ display: 'none', marginBottom: '16px' }}>
+        <button
+          onClick={() => setSidebarOpen(true)}
+          style={{
+            width: '100%',
+            padding: '12px 18px',
+            background: 'linear-gradient(135deg, #FF7E5F 0%, #FF5A36 100%)',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: '12px',
+            fontWeight: 800,
+            fontSize: '0.95rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            boxShadow: '0 4px 12px rgba(255, 90, 54, 0.25)',
+            cursor: 'pointer'
+          }}
+        >
+          <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+          </svg>
+          <span>Filter Books / Categories {(selectedClasses.length + selectedInterests.length + selectedSubjects.length > 0) ? `(${selectedClasses.length + selectedInterests.length + selectedSubjects.length})` : ''}</span>
+        </button>
+      </div>
+
       {/* Search Result Banner / Headline */}
       <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <p style={{ color: 'var(--dark-light)', fontSize: '0.95rem', fontWeight: 600 }}>Showing {products.length} of {totalItems} books found</p>
         </div>
         
-        {/* Mobile Filter Toggle */}
+        {/* Desktop/Tablet Filter Button */}
         <button 
           onClick={() => setSidebarOpen(true)} 
           className="btn btn-secondary mobile-filter-btn" 
           style={{ display: 'none', padding: '8px 16px', fontSize: '0.85rem' }}
         >
-          Filters ⚙
+          Filter ⚙
         </button>
       </div>
 
