@@ -18,18 +18,33 @@ export default function ProductCard({ product, onClick }) {
   const isOutOfStock = parseInt(product.stock_qty, 10) <= 0;
 
   return (
-    <div className="product-card" onClick={() => onClick(product.product_id)} style={{
-      background: 'var(--white)',
-      borderRadius: '16px',
-      overflow: 'hidden',
-      boxShadow: 'var(--shadow-sm)',
-      border: '1px solid var(--border)',
-      cursor: 'pointer',
-      display: 'flex',
-      flexDirection: 'column',
-      position: 'relative',
-      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-    }}>
+    <div 
+      className="product-card" 
+      onClick={() => onClick(product.product_id)} 
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick(product.product_id);
+        }
+      }}
+      role="button"
+      tabIndex={0}
+      aria-label={`View details for ${product.title}`}
+      style={{
+        background: 'var(--white)',
+        borderRadius: '16px',
+        overflow: 'hidden',
+        boxShadow: 'var(--shadow-sm)',
+        border: '1px solid var(--border)',
+        cursor: 'pointer',
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'relative',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        touchAction: 'manipulation',
+        WebkitTapHighlightColor: 'transparent'
+      }}
+    >
       {/* Wishlist Icon Button */}
       <button onClick={handleWishlistClick} style={{
         position: 'absolute',

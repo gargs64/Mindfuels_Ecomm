@@ -2,6 +2,25 @@ import React, { useState, useRef, useEffect } from 'react';
 
 function TestimonialCard({ videoSrc, isActive, onToggleActive }) {
   const videoRef = useRef(null);
+  const containerRef = useRef(null);
+  const [isVisible, setIsVisible] = useState(false);
+
+  // Lazy load: only load video when card scrolls into view
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect(); // Only need to load once
+        }
+      },
+      { rootMargin: '200px' } // Start loading 200px before visible
+    );
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!videoRef.current) return;
@@ -16,6 +35,7 @@ function TestimonialCard({ videoSrc, isActive, onToggleActive }) {
 
   return (
     <div 
+      ref={containerRef}
       className="glass-panel testimonial-card" 
       style={{
         flex: '0 0 240px',
@@ -30,14 +50,18 @@ function TestimonialCard({ videoSrc, isActive, onToggleActive }) {
       }} 
       onClick={onToggleActive}
     >
-      <video
-        ref={videoRef}
-        src={videoSrc}
-        preload="metadata"
-        playsInline
-        loop
-        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-      />
+      {isVisible ? (
+        <video
+          ref={videoRef}
+          src={videoSrc}
+          preload="metadata"
+          playsInline
+          loop
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        />
+      ) : (
+        <div style={{ width: '100%', height: '100%', background: '#1a1a1a' }} />
+      )}
       
       {!isActive && (
         <div style={{

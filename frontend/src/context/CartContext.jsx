@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
+import { getApiUrl } from '../utils/api.js';
 
 const CartContext = createContext();
 
@@ -10,7 +11,7 @@ export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+  const API_URL = getApiUrl();
 
   // Load cart on startup or when auth status changes
   useEffect(() => {

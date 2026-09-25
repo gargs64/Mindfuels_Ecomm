@@ -1,0 +1,9 @@
+# Mindfuels Publisher - Robots.txt
+# https://mindfuelspublisher.com
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /health
+
+Sitemap: https://mindfuelspublisher.com/sitemap.xml

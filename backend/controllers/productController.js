@@ -2,6 +2,37 @@ import pool from '../config/db.js';
 import { syncProducts } from '../services/googleSheetsService.js';
 
 /**
+ * Simple in-memory cache for product queries.
+ * Products only change every 30 minutes (Google Sheets sync), so caching for
+ * 5 minutes dramatically reduces DB load without stale data risk.
+ */
+const productCache = new Map();
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+function getCached(key) {
+  const entry = productCache.get(key);
+  if (entry && Date.now() - entry.timestamp < CACHE_TTL_MS) {
+    return entry.data;
+  }
+  productCache.delete(key);
+  return null;
+}
+
+function setCache(key, data) {
+  // Limit cache size to prevent memory leaks
+  if (productCache.size > 200) {
+    const oldest = productCache.keys().next().value;
+    productCache.delete(oldest);
+  }
+  productCache.set(key, { data, timestamp: Date.now() });
+}
+
+/** Clear the entire product cache (called after sync) */
+export function invalidateProductCache() {
+  productCache.clear();
+}
+
+/**
  * Get list of products with advanced filters, search, and pagination.
  *
  * Tag schema in DB:
@@ -13,6 +44,13 @@ import { syncProducts } from '../services/googleSheetsService.js';
  */
 export const getProducts = async (req, res) => {
   try {
+    // Check cache first
+    const cacheKey = `products:${req.originalUrl}`;
+    const cached = getCached(cacheKey);
+    if (cached) {
+      return res.status(200).json(cached);
+    }
+
     const { class: classFilter, interest, subject, search, page = 1, limit = 12 } = req.query;
 
     const parsedPage = parseInt(page, 10) || 1;
@@ -77,7 +115,7 @@ export const getProducts = async (req, res) => {
     queryParams.push(parsedLimit, offset);
     const [products] = await pool.query(dataQuery, queryParams);
 
-    return res.status(200).json({
+    const responseData = {
       products,
       pagination: {
         totalItems,
@@ -85,7 +123,12 @@ export const getProducts = async (req, res) => {
         limit: parsedLimit,
         totalPages: Math.ceil(totalItems / parsedLimit)
       }
-    });
+    };
+
+    // Cache the response
+    setCache(cacheKey, responseData);
+
+    return res.status(200).json(responseData);
   } catch (error) {
     console.error('Error fetching products:', error);
     return res.status(500).json({ error: 'Failed to retrieve products catalog' });
@@ -98,11 +141,22 @@ export const getProducts = async (req, res) => {
 export const getProductById = async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Check cache first
+    const cacheKey = `product:${id}`;
+    const cached = getCached(cacheKey);
+    if (cached) {
+      return res.status(200).json(cached);
+    }
+
     const [products] = await pool.query('SELECT * FROM products WHERE product_id = ?', [id]);
 
     if (products.length === 0) {
       return res.status(404).json({ error: 'Product not found' });
     }
+
+    // Cache the single product
+    setCache(cacheKey, products[0]);
 
     return res.status(200).json(products[0]);
   } catch (error) {

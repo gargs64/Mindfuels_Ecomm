@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ProductCard from './ProductCard.jsx';
+import { getApiUrl, resilientFetch } from '../utils/api.js';
 
 export default function TrustedFavorites({ onProductClick }) {
   const [products, setProducts] = useState([]);
@@ -10,12 +11,12 @@ export default function TrustedFavorites({ onProductClick }) {
   const showTeachersRec = import.meta.env.VITE_SHOW_TEACHERS_RECOMMENDATION !== 'false';
   const showParentsChoice = import.meta.env.VITE_SHOW_PARENTS_FIRST_CHOICE !== 'false';
 
-  const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+  const API_URL = getApiUrl();
 
   useEffect(() => {
     const fetchFeaturedProducts = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/products?limit=20`);
+        const response = await resilientFetch(`${API_URL}/api/products?limit=20`);
         if (response.ok) {
           const data = await response.json();
           setProducts(data.products || []);

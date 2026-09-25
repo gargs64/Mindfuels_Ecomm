@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import ProductCard from '../components/ProductCard.jsx';
+import { getApiUrl, resilientFetch } from '../utils/api.js';
 
 export default function AllProducts({ onProductClick, navigate }) {
   const [products, setProducts] = useState([]);
@@ -16,7 +17,7 @@ export default function AllProducts({ onProductClick, navigate }) {
   
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const API_URL = import.meta.env.PROD ? '' : (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000');
+  const API_URL = getApiUrl();
 
   // Constants
   const classesList = [
@@ -82,7 +83,7 @@ export default function AllProducts({ onProductClick, navigate }) {
       params.set('page', currentPage);
       params.set('limit', 12);
 
-      const response = await fetch(`${API_URL}/api/products?${params.toString()}`);
+      const response = await resilientFetch(`${API_URL}/api/products?${params.toString()}`);
       if (response.ok) {
         const data = await response.json();
         setProducts(data.products || []);

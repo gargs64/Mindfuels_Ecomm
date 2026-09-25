@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import dotenv from 'dotenv';
 import cron from 'node-cron';
 
@@ -36,6 +37,9 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
+// Enable gzip/brotli response compression for all routes
+app.use(compression());
+
 // Parsing JSON bodies
 app.use(express.json());
 
@@ -62,6 +66,88 @@ app.use('/api/pincode', pincodeRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 
+// SEO Routes: robots.txt and sitemap.xml
+let sitemapCache = null;
+let sitemapCacheTime = 0;
+const SITEMAP_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
+
+app.get('/robots.txt', (req, res) => {
+  res.type('text/plain');
+  res.send(`# Mindfuels Publisher - Robots.txt
+# https://mindfuelspublisher.com
+
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /health
+Disallow: /admin
+
+Sitemap: https://mindfuelspublisher.com/sitemap.xml
+`);
+});
+
+app.get('/sitemap.xml', async (req, res) => {
+  res.type('application/xml');
+
+  if (sitemapCache && (Date.now() - sitemapCacheTime < SITEMAP_CACHE_DURATION)) {
+    return res.send(sitemapCache);
+  }
+
+  const baseUrl = process.env.FRONTEND_URL || 'https://mindfuelspublisher.com';
+  const now = new Date().toISOString().split('T')[0];
+
+  let productUrls = '';
+  try {
+    const [products] = await pool.query('SELECT product_id, updated_at FROM products WHERE is_active = 1 LIMIT 500');
+    if (products && products.length > 0) {
+      productUrls = products.map(p => {
+        const lastmod = p.updated_at ? new Date(p.updated_at).toISOString().split('T')[0] : now;
+        return `  <url>
+    <loc>${baseUrl}/products?product=${encodeURIComponent(p.product_id)}</loc>
+    <lastmod>${lastmod}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>`;
+      }).join('\n');
+    }
+  } catch (err) {
+    console.warn('[SEO] Failed to fetch products for sitemap:', err.message);
+  }
+
+  const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>${baseUrl}/</loc>
+    <lastmod>${now}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/products</loc>
+    <lastmod>${now}</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/legal_pages</loc>
+    <lastmod>${now}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>${baseUrl}/cart</loc>
+    <lastmod>${now}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.3</priority>
+  </url>
+${productUrls}
+</urlset>`.trim();
+
+  sitemapCache = sitemap;
+  sitemapCacheTime = Date.now();
+  return res.send(sitemap);
+});
+
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -84,9 +170,14 @@ const staticPath = candidatePaths.find(p => fs.existsSync(path.join(p, 'index.ht
 
 if (staticPath) {
   console.log(`[Server] Serving frontend static assets from: ${staticPath}`);
-  app.use(express.static(staticPath));
+  app.use(express.static(staticPath, {
+    maxAge: '7d',
+    immutable: true,
+    etag: true,
+    lastModified: true
+  }));
   app.get('*', (req, res, next) => {
-    if (req.path.startsWith('/api') || req.path === '/health') return next();
+    if (req.path.startsWith('/api') || req.path === '/health' || req.path === '/robots.txt' || req.path === '/sitemap.xml') return next();
     res.sendFile(path.join(staticPath, 'index.html'), (err) => {
       if (err) {
         res.status(404).json({ error: 'Page not found' });
@@ -125,17 +216,15 @@ cron.schedule('*/30 * * * *', async () => {
   }
 });
 
-// Run an initial sync on startup to guarantee the database is populated
-const runInitialSync = async () => {
-  try {
-    console.log('[Startup] Executing initial Google Sheet product catalog sync...');
-    await syncProducts();
-  } catch (error) {
-    console.error('[Startup] Initial product catalog sync failed (checking credentials):', error.message);
-  }
+// Run an initial sync on startup — NON-BLOCKING so the server accepts requests immediately
+const runInitialSync = () => {
+  console.log('[Startup] Queuing initial Google Sheet product catalog sync (non-blocking)...');
+  syncProducts()
+    .then(() => console.log('[Startup] Initial product catalog sync completed successfully.'))
+    .catch((error) => console.error('[Startup] Initial product catalog sync failed (checking credentials):', error.message));
 };
 
-app.listen(PORT, async () => {
+app.listen(PORT, () => {
   console.log(`Server running in production-grade mode on port ${PORT}`);
-  await runInitialSync();
+  runInitialSync();
 });

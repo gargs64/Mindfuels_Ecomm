@@ -1,5 +1,6 @@
 import { google } from 'googleapis';
 import pool from '../config/db.js';
+import { invalidateProductCache } from '../controllers/productController.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -178,6 +179,9 @@ export async function syncProducts() {
 
     const [result] = await pool.query(query, [productsToUpsert]);
     console.log(`Sync completed! Rows modified/inserted: ${result.affectedRows}`);
+
+    // Clear product API cache so next request fetches fresh data
+    invalidateProductCache();
 
     return {
       success: true,

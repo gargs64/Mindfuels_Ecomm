@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useCart } from '../context/CartContext.jsx';
 import { useWishlist } from '../context/WishlistContext.jsx';
+import { getApiUrl, resilientFetch } from '../utils/api.js';
 
 export default function ProductDetailModal({ productId, onClose }) {
   const { addToCart } = useCart();
@@ -8,28 +9,36 @@ export default function ProductDetailModal({ productId, onClose }) {
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [retryTrigger, setRetryTrigger] = useState(0);
   const [activeImage, setActiveImage] = useState('');
   const [quantity, setQuantity] = useState(1);
 
-  const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+  const API_URL = getApiUrl();
+
+  // Track if backdrop click is a genuine tap vs a scroll/drag
+  const backdropTouchStart = useRef(null);
 
   // Fetch product detail on mount
   useEffect(() => {
     const fetchProduct = async () => {
       setLoading(true);
+      setError(null);
       try {
-        const response = await fetch(`${API_URL}/api/products/${productId}`);
+        const response = await resilientFetch(`${API_URL}/api/products/${productId}`);
         if (response.ok) {
           const data = await response.json();
           setProduct(data);
           setActiveImage(data.image1 || '/photos/1-story-book.jpeg');
           setQuantity(1); // Reset qty
+        } else if (response.status === 404) {
+          setError('This product is no longer available.');
         } else {
-          onClose();
+          setError('Unable to load product details. Please try again.');
         }
       } catch (err) {
         console.error('Failed to load product details:', err);
-        onClose();
+        setError('Network error — please check your connection and try again.');
       } finally {
         setLoading(false);
       }
@@ -37,7 +46,7 @@ export default function ProductDetailModal({ productId, onClose }) {
     if (productId) {
       fetchProduct();
     }
-  }, [productId]);
+  }, [productId, retryTrigger]);
 
   // Handle Escape Key to close modal
   useEffect(() => {
@@ -48,11 +57,83 @@ export default function ProductDetailModal({ productId, onClose }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
+  // Touch-safe backdrop close — prevents accidental close on mobile scroll/swipe
+  const handleBackdropTouchStart = (e) => {
+    if (e.target !== e.currentTarget) return;
+    backdropTouchStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  };
+
+  const handleBackdropTouchEnd = (e) => {
+    if (e.target !== e.currentTarget) return;
+    if (!backdropTouchStart.current) return;
+    const dx = Math.abs(e.changedTouches[0].clientX - backdropTouchStart.current.x);
+    const dy = Math.abs(e.changedTouches[0].clientY - backdropTouchStart.current.y);
+    // Only close if the touch didn't move significantly (i.e. it was a tap, not a scroll)
+    if (dx < 10 && dy < 10) {
+      onClose();
+    }
+    backdropTouchStart.current = null;
+  };
+
+  // On desktop, only close if the click target is the backdrop itself (not a child)
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   if (loading) {
     return (
-      <div className="modal-backdrop" onClick={onClose}>
-        <div className="glass-panel" style={{ padding: '40px', borderRadius: '16px' }} onClick={(e) => e.stopPropagation()}>
+      <div 
+        className="modal-backdrop" 
+        onClick={handleBackdropClick}
+      >
+        <div 
+          className="glass-panel" 
+          style={{ padding: '40px', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }} 
+          onClick={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          onTouchEnd={(e) => e.stopPropagation()}
+        >
           <div className="spinner"></div>
+          <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--dark-light)', fontWeight: 500 }}>Loading book details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div 
+        className="modal-backdrop" 
+        onClick={handleBackdropClick}
+      >
+        <div 
+          className="glass-panel" 
+          style={{ padding: '40px', borderRadius: '16px', textAlign: 'center', maxWidth: '400px' }} 
+          onClick={(e) => e.stopPropagation()}
+          onTouchStart={(e) => e.stopPropagation()}
+          onTouchEnd={(e) => e.stopPropagation()}
+        >
+          <div style={{ fontSize: '2rem', marginBottom: '12px' }}>😔</div>
+          <h3 style={{ fontSize: '1.1rem', marginBottom: '8px', color: 'var(--dark)' }}>Oops!</h3>
+          <p style={{ fontSize: '0.9rem', color: 'var(--dark-light)', marginBottom: '20px' }}>{error}</p>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+            <button 
+              onClick={() => { setError(null); setRetryTrigger(prev => prev + 1); }}
+              className="btn btn-primary" 
+              style={{ padding: '10px 24px', fontSize: '0.9rem' }}
+            >
+              Try Again
+            </button>
+            <button 
+              onClick={onClose}
+              className="btn btn-secondary" 
+              style={{ padding: '10px 24px', fontSize: '0.9rem' }}
+            >
+              Close
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -121,8 +202,13 @@ export default function ProductDetailModal({ productId, onClose }) {
   };
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-card fade-in glass-panel" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-backdrop" onClick={handleBackdropClick} onTouchStart={handleBackdropTouchStart} onTouchEnd={handleBackdropTouchEnd}>
+      <div 
+        className="modal-card fade-in glass-panel" 
+        onClick={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
+        onTouchEnd={(e) => e.stopPropagation()}
+      >
         
         {/* Mobile drag handle */}
         <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 0 0' }}>
