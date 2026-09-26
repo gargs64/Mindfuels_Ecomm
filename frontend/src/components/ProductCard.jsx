@@ -118,7 +118,7 @@ export default function ProductCard({ product, onClick }) {
 
       {/* Cover Image */}
       <div className="aspect-ratio-box">
-        <img src={product.image1 || '/photos/1-story-book.jpeg'} alt={product.title} loading="lazy" />
+        <img src={product.image1 || '/photos/1-story-book.jpeg'} alt={product.title} loading="lazy" decoding="async" />
       </div>
 
       {/* Book Metadata details */}

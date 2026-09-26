@@ -21,6 +21,9 @@ import TrustedFavorites from './components/TrustedFavorites.jsx';
 import ShopByAge from './components/ShopByAge.jsx';
 import CategoryCarousel from './components/CategoryCarousel.jsx';
 import Testimonials from './components/Testimonials.jsx';
+import DelhiPublishingInfo from './components/DelhiPublishingInfo.jsx';
+
+import { updatePageSEO } from './utils/seo.js';
 
 function MainApp() {
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
@@ -48,24 +51,49 @@ function MainApp() {
     return () => window.removeEventListener('popstate', handleLocationChange);
   }, []);
 
-  // Dynamic Page Title SEO update
+  // Dynamic Page Title & Meta Description SEO update
   useEffect(() => {
     switch (currentPath) {
       case '/products':
-        document.title = 'All Products & Workbooks | Mindfuels';
+        updatePageSEO({
+          title: "Buy Children's Educational Books & Activity Workbooks | Mindfuels Delhi",
+          description: "Browse curriculum-aligned preschool, kindergarten, and primary school workbooks, phonics, mathematics, and moral storybooks from Mindfuels Delhi with free express shipping.",
+          canonicalUrl: `https://mindfuelspublisher.com/products${window.location.search}`
+        });
         break;
       case '/cart':
-        document.title = 'My Shopping Cart | Mindfuels';
+        updatePageSEO({
+          title: "My Shopping Cart | Mindfuels Children's Books",
+          description: "Review your selected preschool workbooks, activity collections, and storybooks. Secure checkout with free delivery across India.",
+          canonicalUrl: "https://mindfuelspublisher.com/cart"
+        });
         break;
       case '/profile':
-        document.title = 'My Profile & Orders | Mindfuels';
+        updatePageSEO({
+          title: 'My Profile & Order History | Mindfuels Publisher',
+          description: 'Track your book shipment deliveries, view past orders, and manage your shipping address.',
+          canonicalUrl: "https://mindfuelspublisher.com/profile"
+        });
         break;
       case '/legal_pages':
-        document.title = 'Policies & Terms | Mindfuels';
+        updatePageSEO({
+          title: 'About Mindfuels Publisher Delhi — Policies, Shipping & Contact',
+          description: 'Learn about Mindfuels 20-year legacy in children education publishing in Delhi NCR, our 100% replacement guarantee, and fast shipping policies.',
+          canonicalUrl: "https://mindfuelspublisher.com/legal_pages"
+        });
+        break;
+      case '/admin':
+        updatePageSEO({
+          title: 'Admin Dashboard | Mindfuels Publisher'
+        });
         break;
       case '/':
       default:
-        document.title = "Mindfuels | Trustworthy Children's Books & Activity Workbooks";
+        updatePageSEO({
+          title: "Mindfuels | Children's Books & Preschool Activity Workbooks Publisher in Delhi, India",
+          description: "Mindfuels is a trusted children's educational book publisher in Delhi NCR. Buy nursery & preschool workbooks, LKG UKG books, phonics, cursive writing, mental maths, and moral storybooks.",
+          canonicalUrl: "https://mindfuelspublisher.com/"
+        });
         break;
     }
   }, [currentPath]);
@@ -119,6 +147,7 @@ function MainApp() {
             <ShopByAge navigate={navigate} />
             <CategoryCarousel navigate={navigate} />
             <Testimonials />
+            <DelhiPublishingInfo navigate={navigate} />
           </div>
         );
     }

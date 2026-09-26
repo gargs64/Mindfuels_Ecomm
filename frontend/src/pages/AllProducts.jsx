@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ProductCard from '../components/ProductCard.jsx';
 import { getApiUrl, resilientFetch } from '../utils/api.js';
+import { updatePageSEO } from '../utils/seo.js';
 
 export default function AllProducts({ onProductClick, navigate }) {
   const [products, setProducts] = useState([]);
@@ -66,6 +67,32 @@ export default function AllProducts({ onProductClick, navigate }) {
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+
+  // Update dynamic SEO based on active filters
+  useEffect(() => {
+    let title = "Buy Children's Educational Books & Activity Workbooks | Mindfuels Delhi";
+    let desc = "Browse curriculum-aligned preschool, kindergarten, and primary school workbooks, phonics, mathematics, and moral storybooks from Mindfuels Delhi.";
+
+    if (searchWord) {
+      title = `"${searchWord}" - Search Children's Books | Mindfuels`;
+      desc = `Search results for "${searchWord}" in Mindfuels children's book publishing catalog.`;
+    } else if (selectedClasses.length > 0) {
+      title = `${selectedClasses.join(', ')} Books & Workbooks | Mindfuels Delhi`;
+      desc = `Explore top-rated educational workbooks and activity books for ${selectedClasses.join(', ')} by Mindfuels Delhi. Free shipping across India.`;
+    } else if (selectedInterests.length > 0) {
+      title = `${selectedInterests.join(', ')} for Children | Mindfuels Publisher Delhi`;
+      desc = `Discover engaging ${selectedInterests.join(', ')} designed for hands-on learning, cognitive development, and fun reading from Mindfuels.`;
+    } else if (selectedSubjects.length > 0) {
+      title = `${selectedSubjects.join(', ')} Activity Books & Worksheets | Mindfuels`;
+      desc = `Shop comprehensive ${selectedSubjects.join(', ')} books and workbooks for preschool, kindergarten, and primary students.`;
+    }
+
+    updatePageSEO({
+      title,
+      description: desc,
+      canonicalUrl: `https://mindfuelspublisher.com/products${window.location.search}`
+    });
+  }, [selectedClasses, selectedInterests, selectedSubjects, searchWord]);
 
   // Fetch products whenever filters or page changes
   useEffect(() => {

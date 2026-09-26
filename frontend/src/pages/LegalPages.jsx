@@ -58,12 +58,12 @@ export default function LegalPages() {
         
         {/* Section: About Us */}
         <section id="about" className="glass-panel legal-content-card" style={{ padding: '30px', borderRadius: '16px', border: '1px solid var(--border)' }}>
-          <h2 style={{ fontSize: '1.8rem', marginBottom: '16px', borderBottom: '2px solid var(--primary)', paddingBottom: '6px', width: 'fit-content' }}>About Us</h2>
+          <h2 style={{ fontSize: '1.8rem', marginBottom: '16px', borderBottom: '2px solid var(--primary)', paddingBottom: '6px', width: 'fit-content' }}>About Mindfuels</h2>
           <p style={{ color: 'var(--dark)', marginBottom: '12px' }}>
-            [PLACEHOLDER ABOUT COPY] Welcome to Mindfuels! We are a premier children's book publisher trusted by schools, educators, and parents. For over two decades, our mission has been to craft enriching, interactive, and beautifully illustrated books that stimulate curiosity and facilitate core academic and mental growth in children.
+            Welcome to Mindfuels! We are a leading children's educational book publisher and distributor based in Delhi NCR. For over two decades, our mission has been to craft enriching, interactive, and beautifully illustrated books that spark curiosity, build foundational skills, and make every young child's reading journey joyful.
           </p>
           <p style={{ color: 'var(--dark-light)' }}>
-            We work closely with childhood developmental specialists and school boards to create curriculum-aligned workbooks, spelling activities, calligraphy guides, and interactive moral story books. At Mindfuels, we believe in screen-free, hands-on cognitive enrichment.
+            We collaborate closely with childhood developmental specialists, preschool educators, and school boards to create curriculum-aligned workbooks, phonics kits, cursive handwriting collections, and value-based moral stories. At Mindfuels, we champion screen-free, hands-on cognitive enrichment for children from Playgroup to Middle School.
           </p>
         </section>
 
@@ -71,13 +71,13 @@ export default function LegalPages() {
         <section id="refund" className="glass-panel legal-content-card" style={{ padding: '30px', borderRadius: '16px', border: '1px solid var(--border)' }}>
           <h2 style={{ fontSize: '1.8rem', marginBottom: '16px', borderBottom: '2px solid var(--primary)', paddingBottom: '6px', width: 'fit-content' }}>Returns & Exchanges</h2>
           <p style={{ color: 'var(--dark)', marginBottom: '12px' }}>
-            [PLACEHOLDER REFUND POLICY] We want you and your child to love our books. If you receive a damaged, defective, or incorrect print run, you are eligible for a replacement or full refund.
+            We want you and your child to love our books. If you receive a damaged, defective, or incorrect print copy, you are eligible for an immediate replacement or full refund under our 7-Day Hassle-Free Policy.
           </p>
           <h4 style={{ margin: '14px 0 6px', fontWeight: 'bold' }}>Key Policies:</h4>
           <ul style={{ paddingLeft: '20px', color: 'var(--dark-light)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
             <li>Requests for returns or replacements must be raised within 7 calendar days of delivery.</li>
-            <li>Books must be in their original, unused, and pristine packaging condition.</li>
-            <li>In cases of physical transport damage, please email support with video/photo evidence of the unboxing.</li>
+            <li>Books should be in their original, unused condition.</li>
+            <li>In case of physical transit damage, please notify our support team via WhatsApp or email with photos of the package.</li>
           </ul>
         </section>
 
@@ -85,12 +85,12 @@ export default function LegalPages() {
         <section id="shipping" className="glass-panel legal-content-card" style={{ padding: '30px', borderRadius: '16px', border: '1px solid var(--border)' }}>
           <h2 style={{ fontSize: '1.8rem', marginBottom: '16px', borderBottom: '2px solid var(--primary)', paddingBottom: '6px', width: 'fit-content' }}>Shipping Policy</h2>
           <p style={{ color: 'var(--dark)', marginBottom: '12px' }}>
-            [PLACEHOLDER SHIPPING POLICY] We are proud to offer **FREE SHIPPING** across all serviceable pin codes in India. We aggregate our deliveries via Fship using leading shipping partners (Delhivery, BlueDart, Xpressbees, etc.) to guarantee swift delivery to your doorstep.
+            We are proud to offer <strong>FREE SHIPPING</strong> across all serviceable pin codes in Delhi NCR and throughout India. We partner with India's leading logistics carriers (Delhivery, BlueDart, Xpressbees, etc.) via Fship to guarantee swift, dependable delivery to your doorstep.
           </p>
           <ul style={{ paddingLeft: '20px', color: 'var(--dark-light)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <li>Orders are processed and dispatched within 24–48 hours of successful payment signature verification.</li>
-            <li>Estimated delivery times: 2–5 business days for metro areas; 4–7 business days for regional areas.</li>
-            <li>Upon dispatch, a live tracking link along with an AWB waybill code is updated on your customer profile and sent via email.</li>
+            <li>Orders are processed and dispatched within 24–48 hours of order confirmation.</li>
+            <li>Estimated delivery times: 2–4 business days for Delhi NCR and metro hubs; 4–7 business days for other regional areas.</li>
+            <li>Upon dispatch, a live tracking link with an AWB waybill number is sent to your email and accessible in your customer profile.</li>
           </ul>
         </section>
 
@@ -98,12 +98,12 @@ export default function LegalPages() {
         <section id="contact" className="glass-panel legal-content-card" style={{ padding: '30px', borderRadius: '16px', border: '1px solid var(--border)' }}>
           <h2 style={{ fontSize: '1.8rem', marginBottom: '16px', borderBottom: '2px solid var(--primary)', paddingBottom: '6px', width: 'fit-content' }}>Contact Us</h2>
           <p style={{ color: 'var(--dark)', marginBottom: '12px' }}>
-            [PLACEHOLDER CONTACT DETAILS] Need assistance with an order, school bulk subscription, or shipping tracking? Get in touch with our operations support:
+            Need assistance with an order, tracking, or school bulk distribution in Delhi NCR or Pan-India? Get in touch with our team:
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', color: 'var(--dark-light)', marginTop: '12px' }}>
-            <div><strong>Email Support:</strong> help@mindfuels.com</div>
-            <div><strong>Support Hotline:</strong> +91 98765 43210 (Mon-Sat, 9:00 AM - 6:00 PM IST)</div>
-            <div><strong>Headquarters Address:</strong> Mindfuels Publishing Private Limited, DLF Phase 3, Gurgaon, Haryana, India - 122001</div>
+            <div><strong>Email Support:</strong> mindfuelspublisher@gmail.com</div>
+            <div><strong>Support & WhatsApp Helpline:</strong> +91 98999 23670 (Mon-Sat, 9:30 AM - 6:30 PM IST)</div>
+            <div><strong>Registered Office / Hub:</strong> Mindfuels Publisher & Distributors, Nai Sarak / Daryaganj Commercial Area, Delhi - 110006, India</div>
           </div>
         </section>
 
@@ -111,10 +111,10 @@ export default function LegalPages() {
         <section id="privacy" className="glass-panel legal-content-card" style={{ padding: '30px', borderRadius: '16px', border: '1px solid var(--border)' }}>
           <h2 style={{ fontSize: '1.8rem', marginBottom: '16px', borderBottom: '2px solid var(--primary)', paddingBottom: '6px', width: 'fit-content' }}>Privacy Policy</h2>
           <p style={{ color: 'var(--dark)', marginBottom: '12px' }}>
-            [PLACEHOLDER PRIVACY POLICY] Your privacy and security are paramount. This policy documents how we collect, store, and utilize details regarding your Auth0 registrations, shipping destinations, and transactions.
+            Your privacy and data security are our top priorities. This policy documents how we collect, store, and utilize details regarding your customer account, shipping destinations, and transactions.
           </p>
           <p style={{ color: 'var(--dark-light)' }}>
-            We do not store credit card credentials, bank detail statements, or PIN codes on our host servers; all payments are processed securely via PCI-DSS compliant Razorpay. Shipping details are transmitted securely via API to Fship logistics to facilitate order deliveries.
+            We do not store credit card credentials, bank passwords, or UPI PINs on our servers; all payments are processed securely via PCI-DSS compliant Razorpay. Shipping details are transmitted securely via API to Fship logistics to facilitate order fulfillment.
           </p>
         </section>
 
@@ -122,10 +122,10 @@ export default function LegalPages() {
         <section id="terms" className="glass-panel legal-content-card" style={{ padding: '30px', borderRadius: '16px', border: '1px solid var(--border)' }}>
           <h2 style={{ fontSize: '1.8rem', marginBottom: '16px', borderBottom: '2px solid var(--primary)', paddingBottom: '6px', width: 'fit-content' }}>Terms & Conditions</h2>
           <p style={{ color: 'var(--dark)', marginBottom: '12px' }}>
-            [PLACEHOLDER TERMS AND CONDITIONS] By accessing or purchasing from the Mindfuels e-commerce site, you agree to comply with and be bound by these Terms of Service.
+            By accessing or purchasing from the Mindfuels platform, you agree to comply with and be bound by these Terms of Service.
           </p>
           <p style={{ color: 'var(--dark-light)' }}>
-            All content published in our books, worksheets, activity collections, and web media is the exclusive intellectual property of Mindfuels. Any commercial reproduction, resale, or unauthorized sharing of printable files without written consent is strictly prohibited.
+            All content published in our books, worksheets, activity collections, and web media is the intellectual property of Mindfuels Publisher & Distributors. Commercial reproduction or unauthorized redistribution of our content without written consent is strictly prohibited.
           </p>
         </section>
 

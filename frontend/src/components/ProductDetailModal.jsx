@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useCart } from '../context/CartContext.jsx';
 import { useWishlist } from '../context/WishlistContext.jsx';
 import { getApiUrl, resilientFetch } from '../utils/api.js';
+import { setDynamicSchema, removeDynamicSchema, updatePageSEO } from '../utils/seo.js';
 
 export default function ProductDetailModal({ productId, onClose }) {
   const { addToCart } = useCart();
@@ -31,6 +32,39 @@ export default function ProductDetailModal({ productId, onClose }) {
           setProduct(data);
           setActiveImage(data.image1 || '/photos/1-story-book.jpeg');
           setQuantity(1); // Reset qty
+
+          // Dynamic Product SEO & JSON-LD Structured Data
+          updatePageSEO({
+            title: `${data.title} | Mindfuels Children's Books Delhi`,
+            description: data.description ? data.description.substring(0, 155) : `Buy ${data.title} by Mindfuels Publisher Delhi with fast shipping across India.`,
+            canonicalUrl: `https://mindfuelspublisher.com/products?product=${data.product_id}`
+          });
+
+          setDynamicSchema('product-jsonld-schema', {
+            "@context": "https://schema.org/",
+            "@type": "Product",
+            "name": data.title,
+            "image": [data.image1, data.image2, data.image3].filter(Boolean),
+            "description": data.description || `Educational children's book: ${data.title} published by Mindfuels Delhi.`,
+            "sku": `MF-${data.product_id}`,
+            "brand": {
+              "@type": "Brand",
+              "name": "Mindfuels"
+            },
+            "offers": {
+              "@type": "Offer",
+              "url": `https://mindfuelspublisher.com/products?product=${data.product_id}`,
+              "priceCurrency": "INR",
+              "price": data.sp,
+              "priceValidUntil": "2027-12-31",
+              "itemCondition": "https://schema.org/NewCondition",
+              "availability": parseInt(data.stock_qty, 10) > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+              "seller": {
+                "@type": "Organization",
+                "name": "Mindfuels Publisher & Distributors"
+              }
+            }
+          });
         } else if (response.status === 404) {
           setError('This product is no longer available.');
         } else {
@@ -46,6 +80,10 @@ export default function ProductDetailModal({ productId, onClose }) {
     if (productId) {
       fetchProduct();
     }
+
+    return () => {
+      removeDynamicSchema('product-jsonld-schema');
+    };
   }, [productId, retryTrigger]);
 
   // Handle Escape Key to close modal

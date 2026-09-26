@@ -26,8 +26,15 @@ export default function Footer({ navigate }) {
               <img src="/photos/logo.png" alt="Mindfuels" style={{ height: '40px', filter: 'brightness(1.5)' }} />
             </div>
             <p style={{ fontSize: '0.85rem', lineHeight: '1.5' }}>
-              Publishing educational, activity, coloring, and storybooks that inspire creativity, encourage learning, and make every child's reading journey enjoyable. Thankyou for Joining our Community
+              Publishing educational, activity, phonics, and storybooks that inspire young minds. Trusted by leading schools and parents across Delhi NCR and India with 20+ years of educational excellence.
             </p>
+            <div style={{ fontSize: '0.8rem', color: '#CBD5E1', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="2.5">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3"></circle>
+              </svg>
+              <span>Nai Sarak / Daryaganj, Delhi - 110006</span>
+            </div>
           </div>
 
           {/* Column 2: Quick Shop Categories */}
@@ -70,7 +77,7 @@ export default function Footer({ navigate }) {
             </a>
 
             {/* Email */}
-            <a href="mailto:mindfuelspubliher@gmail.com" className="footer-social-link">
+            <a href="mailto:mindfuelspublisher@gmail.com" className="footer-social-link">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
                 <polyline points="22,6 12,13 2,6"></polyline>

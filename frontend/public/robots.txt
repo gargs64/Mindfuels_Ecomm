@@ -3,7 +3,10 @@
 
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /profile
 Disallow: /api/
 Disallow: /health
 
 Sitemap: https://mindfuelspublisher.com/sitemap.xml
+

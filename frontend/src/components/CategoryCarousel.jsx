@@ -86,7 +86,7 @@ export default function CategoryCarousel({ navigate }) {
             {/* Background Image */}
             <img
               src={cat.image}
-              alt={cat.title}
+              alt={`Mindfuels ${cat.title} — ${cat.description}`}
               style={{
                 width: '100%',
                 height: '100%',
@@ -94,6 +94,7 @@ export default function CategoryCarousel({ navigate }) {
                 transition: 'transform 0.5s'
               }}
               loading="lazy"
+              decoding="async"
             />
             
             {/* Gradient Overlay */}

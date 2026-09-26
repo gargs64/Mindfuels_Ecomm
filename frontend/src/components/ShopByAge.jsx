@@ -84,7 +84,7 @@ export default function ShopByAge({ navigate }) {
               }}>
                 <img
                   src={tile.image}
-                  alt={tile.label}
+                  alt={`Mindfuels children books for ${tile.label} (${tile.sublabel})`}
                   style={{
                     width: '100%',
                     height: '100%',
@@ -92,6 +92,7 @@ export default function ShopByAge({ navigate }) {
                     transition: 'transform 0.4s'
                   }}
                   loading="lazy"
+                  decoding="async"
                 />
               </div>
               
