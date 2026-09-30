@@ -1,10 +1,9 @@
 import axios from 'axios';
-import { checkPincodeServiceability } from '../services/shiprocketService.js';
 
 /**
- * Validates and looks up details of a 6-digit Indian Pincode.
+ * Validates and looks up details of a 6-digit Indian Pincode (auto-fills city/state).
  * Query: https://api.postalpincode.in/pincode/:pincode
- * Also checks Shiprocket courier serviceability if credentials exist.
+ * Orders are delivered locally, so there is no courier serviceability check.
  */
 export const lookupPincode = async (req, res) => {
   const { pincode } = req.params;
@@ -31,15 +30,7 @@ export const lookupPincode = async (req, res) => {
     const city = info.District || info.Block || info.Circle;
     const state = info.State;
 
-    // 2. Perform Shiprocket courier serviceability validation
-    const shiprocketCheck = await checkPincodeServiceability(pincode);
-    if (shiprocketCheck.success && !shiprocketCheck.serviceable) {
-      return res.status(200).json({
-        valid: false,
-        error: 'Pincode is unserviceable. We do not deliver to this area.'
-      });
-    }
-
+    res.set('Cache-Control', 'public, max-age=86400');
     return res.status(200).json({
       valid: true,
       city: city,

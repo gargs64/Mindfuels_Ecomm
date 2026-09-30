@@ -13,7 +13,7 @@ MINDFUELS/
 │   ├── controllers/   # Route handlers
 │   ├── middleware/    # Auth0 JWT + rate limiting
 │   ├── routes/        # API route definitions
-│   ├── services/      # Google Sheets sync + Fship
+│   ├── services/      # Google Sheets sync + email / WhatsApp notifications
 │   └── server.js      # App entry point
 ├── frontend/          # React Vite SPA
 │   ├── public/        # Static assets (photos, videos)
@@ -33,7 +33,7 @@ MINDFUELS/
 - **MySQL** database (Hostinger / local)
 - **Auth0** account — SPA app + API registered
 - **Razorpay** account (test keys work for local dev)
-- **Fship** account with API token
+- **Gmail** account with an App Password (for order emails)
 - **Google Cloud** project with Sheets API enabled + Service Account
 
 ---
@@ -78,8 +78,10 @@ npm run dev        # Starts with nodemon on port 5000
 | `AUTH0_AUDIENCE` | Auth0 API audience (e.g. https://api.mindfuels.com) |
 | `RAZORPAY_KEY_ID` | Razorpay Key ID |
 | `RAZORPAY_KEY_SECRET` | Razorpay Key Secret |
-| `FSHIP_BASE_URL` | Fship base URL (staging or production) |
-| `FSHIP_API_KEY` | Fship signature/token |
+| `SMTP_USER` / `SMTP_PASS` | Gmail address + App Password used to send order emails |
+| `ADMIN_NOTIFY_EMAIL` | Who gets "new order" emails (default gargpshruti@gmail.com) |
+| `ADMIN_WHATSAPP_NUMBER` | Who gets "new order" WhatsApp alerts (default 9899923670) |
+| `CALLMEBOT_API_KEY` | CallMeBot key for WhatsApp alerts (see below) |
 | `GOOGLE_SERVICE_ACCOUNT_EMAIL` | Google service account email |
 | `GOOGLE_PRIVATE_KEY` | Google private key (replace `\n` with actual newlines) |
 | `GOOGLE_SHEET_ID` | Google Spreadsheet ID from URL |
@@ -159,12 +161,24 @@ npm run dev        # Opens on http://localhost:3000
 
 ---
 
-## 🚚 Fship Integration
+## 🚚 Local Delivery & Order Notifications
 
-- Fship API key goes in `FSHIP_API_KEY` env variable.
-- Use `https://capi-qc.fship.in` for sandbox testing (set in `FSHIP_BASE_URL`).
-- Use `https://capi.fship.in` for production.
-- If Fship booking fails (wallet empty, KYC pending), the order is still saved and a `Failed` shipment record is created for manual booking.
+Orders are delivered locally by the store, so no courier API is used. As soon as a payment is verified, the order is confirmed and:
+
+1. **The customer** gets an order confirmation email with all details and a PDF receipt attached.
+2. **The store owner** gets a "New order arrived" email at `ADMIN_NOTIFY_EMAIL` (default `gargpshruti@gmail.com`).
+3. **The store owner** gets a WhatsApp message on `ADMIN_WHATSAPP_NUMBER` (default `9899923670`): *"new order arrived, please check Website admin panel"*.
+
+Update each order's delivery status (Processing → Shipped → Delivered / Cancelled) from the dropdown in `/admin`. Customers see it under My Orders.
+
+### WhatsApp order alerts (one-time setup, free)
+
+1. Open https://www.callmebot.com/blog/free-api-whatsapp-messages/ and save the CallMeBot phone number shown there in your phone contacts.
+2. From WhatsApp on **9899923670**, send that contact: `I allow callmebot to send me messages`
+3. You'll get a reply with your API key. Add it to the backend environment: `CALLMEBOT_API_KEY=123456`
+4. Restart the backend and run `node testEmail.js` in `backend/` to check the emails and the WhatsApp alert.
+
+(Twilio also works as a fallback if `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` are set.)
 
 ---
 

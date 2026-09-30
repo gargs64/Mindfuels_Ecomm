@@ -366,43 +366,31 @@ export default function Profile({ navigate }) {
                     background: 'rgba(258,250,252,0.6)', padding: '16px', borderRadius: '12px',
                     border: '1px solid var(--border)', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '8px'
                   }}>
-                    <h5 style={{ fontSize: '0.9rem', marginBottom: '2px', fontWeight: 'bold' }}>Delivery Tracking</h5>
-                    <div><strong>Status:</strong> {order.shipping_status || 'Processing order'}</div>
-                    <div><strong>Courier:</strong> {order.courier_name || 'Standard Shipping'}</div>
-                    <div><strong>AWB No:</strong> <code>{order.awb_code && !order.awb_code.includes('SR-FAIL') ? order.awb_code : 'Will be assigned upon dispatch'}</code></div>
-                    
-                    {/* Live Tracking Button */}
+                    <h5 style={{ fontSize: '0.9rem', marginBottom: '2px', fontWeight: 'bold' }}>Delivery Status</h5>
                     {(() => {
-                      const trackingUrl = order.tracking_url
-                        ? order.tracking_url
-                        : (order.awb_code && !order.awb_code.includes('SR-FAIL'))
-                          ? `https://shiprocket.co/tracking/${order.awb_code}`
-                          : `https://shiprocket.co/tracking/${order.id}`;
-
+                      const status = order.payment_status === 'Paid' ? (order.status || 'Processing') : 'Awaiting payment';
+                      const steps = ['Processing', 'Shipped', 'Delivered'];
+                      const current = steps.indexOf(status);
+                      const labels = {
+                        Processing: 'Order confirmed — being packed',
+                        Shipped: 'Out for delivery',
+                        Delivered: 'Delivered',
+                        Cancelled: 'Cancelled',
+                      };
                       return (
-                        <a
-                          href={trackingUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            marginTop: '8px',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '6px',
-                            padding: '8px 14px',
-                            borderRadius: '8px',
-                            background: 'var(--secondary)',
-                            color: '#FFFFFF',
-                            fontWeight: 700,
-                            fontSize: '0.82rem',
-                            textDecoration: 'none',
-                            boxShadow: '0 2px 6px rgba(74, 144, 226, 0.25)',
-                            transition: 'all 0.2s ease'
-                          }}
-                        >
-                          🚚 Track Shipment ➔
-                        </a>
+                        <>
+                          <div><strong>Status:</strong> {labels[status] || status}</div>
+                          {current >= 0 && (
+                            <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }} aria-hidden="true">
+                              {steps.map((s, i) => (
+                                <div key={s} style={{ flex: 1, height: '6px', borderRadius: '3px', background: i <= current ? 'var(--success)' : 'var(--border)' }} />
+                              ))}
+                            </div>
+                          )}
+                          <div style={{ color: 'var(--dark-light)', fontSize: '0.8rem' }}>
+                            Delivered by Mindfuels within 4–7 business days. Questions? WhatsApp +91 9899923670.
+                          </div>
+                        </>
                       );
                     })()}
                   </div>

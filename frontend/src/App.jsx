@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth0 } from '@auth0/auth0-react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { CartProvider } from './context/CartContext.jsx';
 import { WishlistProvider } from './context/WishlistContext.jsx';
 
@@ -8,12 +7,18 @@ import Navbar from './components/Navbar.jsx';
 import Footer from './components/Footer.jsx';
 import ProductDetailModal from './components/ProductDetailModal.jsx';
 
-// Pages
-import AllProducts from './pages/AllProducts.jsx';
-import Cart from './pages/Cart.jsx';
-import Profile from './pages/Profile.jsx';
-import LegalPages from './pages/LegalPages.jsx';
-import Admin from './pages/Admin.jsx';
+// Pages — loaded on demand so the home page downloads less JavaScript
+const AllProducts = lazy(() => import('./pages/AllProducts.jsx'));
+const Cart = lazy(() => import('./pages/Cart.jsx'));
+const Profile = lazy(() => import('./pages/Profile.jsx'));
+const LegalPages = lazy(() => import('./pages/LegalPages.jsx'));
+const Admin = lazy(() => import('./pages/Admin.jsx'));
+
+const PageFallback = () => (
+  <div style={{ display: 'flex', justifyContent: 'center', padding: '100px 0', minHeight: '60vh' }}>
+    <div className="spinner"></div>
+  </div>
+);
 
 // Home Elements
 import Hero from './components/Hero.jsx';
@@ -158,7 +163,9 @@ function MainApp() {
       <Navbar currentPath={currentPath} navigate={navigate} />
       
       <main style={{ flex: '1 0 auto', paddingTop: '60px' }}>
-        {renderPage()}
+        <Suspense fallback={<PageFallback />}>
+          {renderPage()}
+        </Suspense>
       </main>
 
       <Footer navigate={navigate} />

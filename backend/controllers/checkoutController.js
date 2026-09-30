@@ -1,9 +1,8 @@
 import crypto from 'crypto';
 import Razorpay from 'razorpay';
 import pool from '../config/db.js';
-import { createShiprocketShipment } from '../services/shiprocketService.js';
-import { sendOrderConfirmationEmail } from '../services/emailService.js';
-import { sendOrderConfirmationWhatsApp } from '../services/whatsappService.js';
+import { sendOrderConfirmationEmail, sendAdminNewOrderEmail } from '../services/emailService.js';
+import { sendAdminNewOrderWhatsApp } from '../services/whatsappService.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -54,12 +53,8 @@ export const createOrder = async (req, res) => {
       return res.status(400).json({ error: 'Your shopping cart is empty.' });
     }
 
-    // 2. Validate stock availability and calculate totals/dimensions
+    // 2. Validate stock availability and calculate total
     let totalAmount = 0;
-    let totalWeight = 0;
-    let maxLength = 0;
-    let maxWidth = 0;
-    let totalHeight = 0;
 
     for (const item of cartItems) {
       if (item.quantity > item.stock_qty) {
@@ -70,22 +65,7 @@ export const createOrder = async (req, res) => {
       }
 
       totalAmount += parseFloat(item.sp) * item.quantity;
-      totalWeight += parseFloat(item.weight || 0) * item.quantity;
-      
-      const itemLen = parseFloat(item.length || 0);
-      const itemWid = parseFloat(item.width || 0);
-      const itemHgt = parseFloat(item.height || 0);
-      
-      if (itemLen > maxLength) maxLength = itemLen;
-      if (itemWid > maxWidth) maxWidth = itemWid;
-      totalHeight += itemHgt * item.quantity;
     }
-
-    // Apply fallbacks for zero package dimensions
-    if (totalWeight <= 0) totalWeight = 0.5; // standard 500g package
-    if (maxLength <= 0) maxLength = 15.0;     // default book box dimensions (cm)
-    if (maxWidth <= 0) maxWidth = 15.0;
-    if (totalHeight <= 0) totalHeight = 3.0;
 
     // 3. Verify shipping address belongs to the user
     const [addresses] = await connection.query(
@@ -171,14 +151,15 @@ export const createOrder = async (req, res) => {
 };
 
 /**
- * Verifies Razorpay payment signature, updates inventory, books shipping via Shiprocket, and clears cart.
- * Payload: { order_id, razorpay_order_id, razorpay_payment_id, razorpay_signature, mock_success }
+ * Verifies Razorpay payment signature, confirms the order, updates inventory, clears cart,
+ * and sends the customer receipt + admin alerts. Delivery is handled locally (no courier API).
+ * Payload: { order_id, razorpay_order_id, razorpay_payment_id, razorpay_signature, mock_success, customer_email }
  */
 export const verifyPayment = async (req, res) => {
   const connection = await pool.getConnection();
   try {
     const userId = req.userId;
-    const { order_id, razorpay_order_id, razorpay_payment_id, razorpay_signature, mock_success } = req.body;
+    const { order_id, razorpay_order_id, razorpay_payment_id, razorpay_signature, mock_success, customer_email } = req.body;
 
     if (!order_id || !razorpay_order_id) {
       return res.status(400).json({ error: 'Missing required validation references.' });
@@ -259,145 +240,49 @@ export const verifyPayment = async (req, res) => {
 
     await connection.commit();
 
-    // 7. Shipping integration (Shiprocket order creation)
-    // Run outside the payment transaction to avoid locking rows during external network ops.
-    const [addressInfo] = await pool.query('SELECT * FROM shipping_address WHERE id = ?', [order.address_id]);
-    const address = addressInfo[0];
-    const customerAddressText = `${address.address_line1}${address.address_line2 ? ', ' + address.address_line2 : ''}, ${address.city}, ${address.state}`;
-
-    // Get order items along with title for booking
-    const [itemsWithInfo] = await pool.query(
-      'SELECT oi.*, p.title FROM order_items oi JOIN products p ON oi.product_id = p.product_id WHERE oi.order_id = ?',
-      [order_id]
-    );
-
-    // Re-calculate package weight & dimensions
-    let totalWeight = 0;
-    let maxLength = 0;
-    let maxWidth = 0;
-    let totalHeight = 0;
-
-    itemsWithInfo.forEach(item => {
-      totalWeight += parseFloat(item.weight || 0) * item.quantity;
-      const l = parseFloat(item.length || 0);
-      const w = parseFloat(item.width || 0);
-      const h = parseFloat(item.height || 0);
-
-      if (l > maxLength) maxLength = l;
-      if (w > maxWidth) maxWidth = w;
-      totalHeight += h * item.quantity;
-    });
-
-    if (totalWeight <= 0) totalWeight = 0.5;
-    if (maxLength <= 0) maxLength = 15.0;
-    if (maxWidth <= 0) maxWidth = 15.0;
-    if (totalHeight <= 0) totalHeight = 3.0;
-
-    const bookingResult = await createShiprocketShipment({
-      orderId: order_id,
-      customer: {
-        name: address.full_name,
-        email: req.user.email || `${userId}@user.mindfuels.com`,
-        phone: address.phone,
-        address: customerAddressText,
-        city: address.city,
-        state: address.state,
-        pincode: address.pincode
-      },
-      items: itemsWithInfo,
-      totalAmount: order.total_amount,
-      packageDetails: {
-        weight: totalWeight,
-        length: maxLength,
-        width: maxWidth,
-        height: totalHeight
-      }
-    });
-
-    // 8. Log shipment outcomes
-    let dbShipment = null;
-    if (bookingResult.success) {
-      const shipmentInsertQuery = `
-        INSERT INTO shipments (order_id, shiprocket_order_id, shiprocket_shipment_id, awb_code, courier_name, tracking_url, status)
-        VALUES (?, ?, ?, ?, ?, ?, 'Booked')
-      `;
-      const [shipResult] = await pool.query(shipmentInsertQuery, [
-        order_id,
-        bookingResult.shiprocketOrderId,
-        bookingResult.shiprocketShipmentId,
-        bookingResult.awbCode,
-        bookingResult.courierName,
-        bookingResult.trackingUrl
-      ]);
-      
-      dbShipment = {
-        id: shipResult.insertId,
-        awb: bookingResult.awbCode,
-        courier: bookingResult.courierName,
-        trackingUrl: bookingResult.trackingUrl,
-        status: 'Booked'
-      };
-      
-      // Update order status to Processing (with shipment booked)
-      await pool.query('UPDATE orders SET status = ? WHERE id = ?', ['Processing', order_id]);
-    } else {
-      // Create a pending/failed shipment record so admin can book manually
-      const fallbackAwb = `SR-FAIL-${order_id}`;
-      const shipmentInsertQuery = `
-        INSERT INTO shipments (order_id, shiprocket_order_id, shiprocket_shipment_id, awb_code, courier_name, tracking_url, status)
-        VALUES (?, ?, ?, ?, 'Shiprocket', '', 'Failed')
-      `;
-      const [shipResult] = await pool.query(shipmentInsertQuery, [
-        order_id,
-        `SR-FAIL-${order_id}`,
-        null,
-        fallbackAwb,
-      ]);
-
-      dbShipment = {
-        id: shipResult.insertId,
-        awb: fallbackAwb,
-        courier: 'Manual/Failed Booking',
-        trackingUrl: '',
-        status: 'Failed',
-        error: bookingResult.error || 'Shipping API offline'
-      };
-    }
-
-    // 9. Send Email Receipt + WhatsApp confirmation (non-blocking — don't fail order if this fails)
-    const [userInfo] = await pool.query('SELECT name, email, phone FROM users WHERE id = ?', [userId]);
+    // 7. Gather order details for notifications + receipt (shipping is handled locally by the store)
+    const [[userInfo], [fullOrderItems], [addressRows]] = await Promise.all([
+      pool.query('SELECT name, email, phone FROM users WHERE id = ?', [userId]),
+      pool.query(
+        'SELECT oi.product_id, oi.quantity, oi.price, p.title, p.image1 FROM order_items oi JOIN products p ON oi.product_id = p.product_id WHERE oi.order_id = ?',
+        [order_id]
+      ),
+      pool.query('SELECT * FROM shipping_address WHERE id = ?', [order.address_id])
+    ]);
     const customer = userInfo[0] || {};
+    const addr = addressRows[0] || {};
 
-    const [fullOrderItems] = await pool.query(
-      'SELECT oi.quantity, oi.price, p.title FROM order_items oi JOIN products p ON oi.product_id = p.product_id WHERE oi.order_id = ?',
-      [order_id]
-    );
+    // Prefer the email typed at checkout, fall back to the account email
+    const isValidEmail = (em) => typeof em === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em);
+    const customerEmail = isValidEmail(customer_email) ? customer_email.trim() : customer.email;
+    const customerName = addr.full_name || customer.name || 'Customer';
+    const createdAt = order.created_at || new Date();
 
-    const [fullAddress] = await pool.query('SELECT * FROM shipping_address WHERE id = ?', [order.address_id]);
-    const addr = fullAddress[0] || {};
-
-    // Fire-and-forget — do not await so the response returns immediately
-    sendOrderConfirmationEmail({
-      order: { id: order_id, total_amount: order.total_amount, created_at: new Date() },
-      customer: { name: customer.name || addr.full_name, email: customer.email },
+    // 8. Notifications — fire-and-forget so the customer gets an instant response.
+    // A notification failure never affects the confirmed order.
+    const notifyPayload = {
+      order: { id: order_id, total_amount: order.total_amount, created_at: createdAt, payment_id: paymentId },
+      customer: { name: customerName, email: customerEmail, phone: addr.phone || customer.phone },
       items: fullOrderItems,
       address: addr
-    }).catch(e => console.error('[Email] Silent error:', e.message));
+    };
 
-    sendOrderConfirmationWhatsApp({
-      orderId: order_id,
-      customerName: customer.name || addr.full_name,
-      customerPhone: addr.phone || customer.phone,
-      totalAmount: order.total_amount,
-      items: fullOrderItems
-    }).catch(e => console.error('[WhatsApp] Silent error:', e.message));
+    sendOrderConfirmationEmail(notifyPayload)
+      .catch(e => console.error('[Email] Customer receipt error:', e.message));
+    sendAdminNewOrderEmail(notifyPayload)
+      .catch(e => console.error('[Email] Admin alert error:', e.message));
+    sendAdminNewOrderWhatsApp({ orderId: order_id, totalAmount: order.total_amount, customerName })
+      .catch(e => console.error('[WhatsApp] Admin alert error:', e.message));
 
     return res.status(200).json({
       success: true,
-      message: 'Payment verified and order processed successfully.',
+      message: 'Payment verified and order confirmed.',
       order_id,
       payment_id: paymentId,
-      shipment: dbShipment
+      created_at: createdAt,
+      total_amount: order.total_amount,
+      items: fullOrderItems,
+      email_sent_to: customerEmail || null
     });
   } catch (error) {
     await connection.rollback();
@@ -408,42 +293,40 @@ export const verifyPayment = async (req, res) => {
   }
 };
 
+const groupByOrderId = (rows) => rows.reduce((acc, row) => {
+  (acc[row.order_id] ||= []).push(row);
+  return acc;
+}, {});
+
 /**
- * Retrieves the order history for the logged-in user, including items and shipping status.
+ * Retrieves the order history for the logged-in user, including items and delivery status.
  */
 export const getOrders = async (req, res) => {
   try {
     const userId = req.userId;
 
     const ordersQuery = `
-      SELECT o.*, 
-             s.awb_code, s.courier_name, s.tracking_url, s.status as shipping_status,
+      SELECT o.*,
              a.full_name, a.phone, a.address_line1, a.address_line2, a.city, a.state, a.pincode
       FROM orders o
-      LEFT JOIN shipments s ON o.id = s.order_id
       JOIN shipping_address a ON o.address_id = a.id
       WHERE o.user_id = ?
       ORDER BY o.created_at DESC
     `;
 
     const [orders] = await pool.query(ordersQuery, [userId]);
+    if (orders.length === 0) return res.status(200).json([]);
 
-    // Gather order items for each order
-    const result = [];
-    for (const order of orders) {
-      const itemsQuery = `
-        SELECT oi.*, p.title, p.image1
-        FROM order_items oi
-        JOIN products p ON oi.product_id = p.product_id
-        WHERE oi.order_id = ?
-      `;
-      const [items] = await pool.query(itemsQuery, [order.id]);
-      
-      result.push({
-        ...order,
-        items
-      });
-    }
+    // Fetch all items for all orders in one query (avoids one DB round-trip per order)
+    const [items] = await pool.query(`
+      SELECT oi.*, p.title, p.image1
+      FROM order_items oi
+      JOIN products p ON oi.product_id = p.product_id
+      WHERE oi.order_id IN (?)
+    `, [orders.map(o => o.id)]);
+
+    const itemsByOrder = groupByOrderId(items);
+    const result = orders.map(order => ({ ...order, items: itemsByOrder[order.id] || [] }));
 
     return res.status(200).json(result);
   } catch (error) {

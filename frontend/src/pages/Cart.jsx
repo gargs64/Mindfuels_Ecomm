@@ -96,15 +96,20 @@ export default function Cart({ navigate }) {
         setState(data.state);
         setPincodeValid(true);
         setPincodeError('');
-      } else {
+      } else if (response.ok) {
         setCity('');
         setState('');
         setPincodeValid(false);
-        setPincodeError(data.error || 'Pincode unserviceable');
+        setPincodeError(data.error || 'Pincode not found');
+      } else {
+        // Lookup service is down — don't block the order, let the customer type city/state
+        setPincodeValid(true);
+        setPincodeError('Could not auto-detect city/state. Please type them below.');
       }
     } catch (err) {
       console.error(err);
-      setPincodeError('Failed to validate pincode');
+      setPincodeValid(true);
+      setPincodeError('Could not auto-detect city/state. Please type them below.');
     } finally {
       setPincodeLoading(false);
     }
@@ -120,11 +125,12 @@ export default function Cart({ navigate }) {
     isEmailValid(email) &&
     addressLine1.trim().length >= 5 &&
     pincodeValid &&
-    city &&
-    state;
+    city.trim() &&
+    state.trim();
 
-  // Razorpay JS SDK script loader
+  // Razorpay JS SDK script loader (loads once per session)
   const loadRazorpayScript = () => {
+    if (window.Razorpay) return Promise.resolve(true);
     return new Promise((resolve) => {
       const script = document.createElement('script');
       script.src = 'https://checkout.razorpay.com/v1/checkout.js';
@@ -133,6 +139,20 @@ export default function Cart({ navigate }) {
       document.body.appendChild(script);
     });
   };
+
+  // Snapshot everything the success screen + receipt need, since the cart is cleared right after
+  const buildConfirmedDetails = (verifyResult) => ({
+    ...verifyResult,
+    items: verifyResult.items && verifyResult.items.length > 0 ? verifyResult.items : [...cartItems],
+    total_amount: verifyResult.total_amount ?? totalAmount,
+    full_name: fullName,
+    phone,
+    address_line1: addressLine1,
+    address_line2: addressLine2,
+    city,
+    state,
+    pincode
+  });
 
   const handleCheckoutSubmit = async (e) => {
     e.preventDefault();
@@ -210,13 +230,14 @@ export default function Cart({ navigate }) {
           body: JSON.stringify({
             order_id: rzpData.order_id,
             razorpay_order_id: rzpData.razorpay_order_id,
-            mock_success: simulateSuccess
+            mock_success: simulateSuccess,
+            customer_email: email
           })
         });
 
         const verifyResult = await verifyResponse.json();
         if (verifyResult.success) {
-          setConfirmedOrderDetails({ ...verifyResult, items: [...cartItems] });
+          setConfirmedOrderDetails(buildConfirmedDetails(verifyResult));
           setOrderConfirmed(true);
           clearLocalCartOnly();
           refreshCart();
@@ -251,13 +272,14 @@ export default function Cart({ navigate }) {
                   order_id: rzpData.order_id,
                   razorpay_order_id: response.razorpay_order_id,
                   razorpay_payment_id: response.razorpay_payment_id,
-                  razorpay_signature: response.razorpay_signature
+                  razorpay_signature: response.razorpay_signature,
+                  customer_email: email
                 })
               });
 
               const verifyResult = await verifyResponse.json();
               if (verifyResult.success) {
-                setConfirmedOrderDetails({ ...verifyResult, items: [...cartItems] });
+                setConfirmedOrderDetails(buildConfirmedDetails(verifyResult));
                 setOrderConfirmed(true);
                 clearLocalCartOnly();
                 refreshCart();
@@ -316,7 +338,6 @@ export default function Cart({ navigate }) {
 
   // Order Confirmation Success Screen
   if (orderConfirmed && confirmedOrderDetails) {
-    const shipment = confirmedOrderDetails.shipment || {};
     return (
       <div className="container fade-in" style={{ padding: '60px 20px', maxWidth: '650px', textAlign: 'center', minHeight: '60vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: '20px' }}>
         
@@ -328,61 +349,27 @@ export default function Cart({ navigate }) {
           ✓
         </div>
         
-        {(() => {
-          const rawAwb = shipment.awb || '';
-          const rawCourier = shipment.courier || '';
-          const isFailedBooking = rawAwb.includes('SR-FAIL') || rawCourier.includes('Failed');
+        <h2 style={{ fontSize: '2rem', fontWeight: 800 }}>Order Confirmed!</h2>
+        <p style={{ color: 'var(--dark-light)', fontSize: '0.95rem' }}>
+          Thank you for ordering with Mindfuels. Your payment is received and we're preparing your books for delivery.
+        </p>
 
-          const subtitleText = isFailedBooking
-            ? 'Thank you for ordering with Mindfuels. Your payment has been captured and your order is being prepared for dispatch.'
-            : 'Thank you for ordering with Mindfuels. Your payment has been captured and shipment booked.';
+        <div className="glass-panel" style={{ width: '100%', padding: '24px', borderRadius: '16px', border: '1px solid var(--border)', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div><strong>Order ID:</strong> #{confirmedOrderDetails.order_id}</div>
+          <div><strong>Amount Paid:</strong> ₹{parseFloat(confirmedOrderDetails.total_amount || 0).toFixed(2)}</div>
+          <div><strong>Deliver to:</strong> {confirmedOrderDetails.full_name}, {confirmedOrderDetails.city} — {confirmedOrderDetails.pincode}</div>
+          {confirmedOrderDetails.email_sent_to && (
+            <div><strong>Receipt emailed to:</strong> {confirmedOrderDetails.email_sent_to}</div>
+          )}
+          <div style={{ borderTop: '1px solid var(--border)', paddingTop: '12px', fontSize: '0.85rem', color: 'var(--dark-light)' }}>
+            <strong>Estimated Delivery:</strong> 4–7 business days. You can check your order status anytime under My Orders.
+          </div>
+        </div>
 
-          const displayAwb = isFailedBooking ? 'Will be assigned upon dispatch' : rawAwb;
-          const displayCourier = isFailedBooking ? 'Pending Courier Assignment' : rawCourier;
-
-          return (
-            <>
-              <h2 style={{ fontSize: '2rem', fontWeight: 800 }}>Order Placed Successfully!</h2>
-              <p style={{ color: 'var(--dark-light)', fontSize: '0.95rem' }}>
-                {subtitleText}
-              </p>
-
-              <div className="glass-panel" style={{ width: '100%', padding: '24px', borderRadius: '16px', border: '1px solid var(--border)', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <div><strong>Order ID:</strong> #{confirmedOrderDetails.order_id}</div>
-                <div><strong>AWB Waybill:</strong> <code>{displayAwb}</code></div>
-                <div><strong>Courier Partner:</strong> {displayCourier}</div>
-                {shipment.trackingUrl && !isFailedBooking && (
-                  <div>
-                    <strong>Tracking Details:</strong>{' '}
-                    <a href={shipment.trackingUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--secondary)', fontWeight: 600, textDecoration: 'underline' }}>
-                      Track Order Link
-                    </a>
-                  </div>
-                )}
-                <div style={{ borderTop: '1px solid var(--border)', paddingTop: '12px', fontSize: '0.85rem', color: 'var(--dark-light)' }}>
-                  <strong>Estimated Delivery:</strong> 4–7 business days. Delivery tracking updates will also be sent to your email.
-                </div>
-              </div>
-            </>
-          );
-        })()}
-
-        {/* Option 2.5: Download Order Receipt Button */}
+        {/* Download Order Receipt Button */}
         <button
           onClick={() => {
-            downloadPdfReceipt({
-              order_id: confirmedOrderDetails.order_id,
-              total_amount: totalAmount,
-              full_name: fullName,
-              phone: phone,
-              address_line1: addressLine1,
-              address_line2: addressLine2,
-              city: city,
-              state: state,
-              pincode: pincode,
-              payment_status: 'Paid',
-              items: cartItems.length > 0 ? cartItems : []
-            });
+            downloadPdfReceipt({ ...confirmedOrderDetails, payment_status: 'Paid' });
           }}
           className="btn btn-primary"
           style={{
@@ -404,7 +391,7 @@ export default function Cart({ navigate }) {
         {(() => {
           const custName = fullName || 'Customer';
           const ordId = confirmedOrderDetails.order_id;
-          const itemsArr = confirmedOrderDetails.items || cartItems || [];
+          const itemsArr = confirmedOrderDetails.items || [];
           const itemsFormatted = itemsArr.length > 0
             ? itemsArr.map(i => `${i.title || i.name || 'Book'} (x${i.quantity || i.qty || 1})`).join(', ')
             : 'Mindfuels Educational Workbooks';
@@ -661,20 +648,22 @@ export default function Cart({ navigate }) {
                 <label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--dark-light)' }}>City</label>
                 <input
                   type="text"
-                  readOnly
-                  placeholder="Auto-filled"
+                  required
+                  placeholder="Auto-filled from pincode"
                   value={city}
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border)', background: '#F1F5F9', marginTop: '4px', cursor: 'not-allowed' }}
+                  onChange={(e) => setCity(e.target.value)}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border)', background: '#F8FAFC', marginTop: '4px' }}
                 />
               </div>
               <div>
                 <label style={{ fontSize: '0.8rem', fontWeight: 'bold', color: 'var(--dark-light)' }}>State</label>
                 <input
                   type="text"
-                  readOnly
-                  placeholder="Auto-filled"
+                  required
+                  placeholder="Auto-filled from pincode"
                   value={state}
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border)', background: '#F1F5F9', marginTop: '4px', cursor: 'not-allowed' }}
+                  onChange={(e) => setState(e.target.value)}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid var(--border)', background: '#F8FAFC', marginTop: '4px' }}
                 />
               </div>
             </div>

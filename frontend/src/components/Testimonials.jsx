@@ -53,7 +53,7 @@ function TestimonialCard({ videoSrc, isActive, onToggleActive }) {
       {isVisible ? (
         <video
           ref={videoRef}
-          src={videoSrc}
+          src={`${videoSrc}#t=0.1`}
           preload="metadata"
           playsInline
           loop

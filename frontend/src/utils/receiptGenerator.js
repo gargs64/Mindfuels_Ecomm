@@ -1,5 +1,3 @@
-import html2pdf from 'html2pdf.js';
-
 /**
  * Builds standard HTML string for invoice receipt
  */
@@ -168,6 +166,8 @@ export const downloadPdfReceipt = async (order) => {
   };
 
   try {
+    // Loaded only when a receipt is downloaded (large library)
+    const { default: html2pdf } = await import('html2pdf.js');
     await html2pdf().set(opt).from(container.firstElementChild).save();
   } catch (err) {
     console.error('[ReceiptGenerator] Direct PDF download failed:', err);

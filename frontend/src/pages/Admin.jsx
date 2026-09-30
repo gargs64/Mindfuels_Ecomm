@@ -73,6 +73,29 @@ export default function Admin({ navigate }) {
     }
   }, [API_URL, getAccessTokenSilently, loginWithRedirect, navigate]);
 
+  const [updatingStatusId, setUpdatingStatusId] = useState(null);
+
+  const updateOrderStatus = useCallback(async (orderId, status) => {
+    setUpdatingStatusId(orderId);
+    try {
+      const token = await getAccessTokenSilently();
+      const res = await fetch(`${API_URL}/api/admin/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ status })
+      });
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || `HTTP ${res.status}`);
+      }
+      setOrders(prev => prev.map(o => (o.id === orderId ? { ...o, status } : o)));
+    } catch (err) {
+      alert(`Could not update order #${orderId}: ${err.message}`);
+    } finally {
+      setUpdatingStatusId(null);
+    }
+  }, [API_URL, getAccessTokenSilently]);
+
   // ─── ACCESS GUARD ────────────────────────────────────────────────────────────
   // Wait for Auth0 to finish loading before making any access decision
   useEffect(() => {
@@ -111,7 +134,8 @@ export default function Admin({ navigate }) {
     const matchesStatus =
       filterStatus === 'all' ||
       (filterStatus === 'paid' && order.payment_status === 'Paid') ||
-      (filterStatus === 'pending' && order.payment_status !== 'Paid');
+      (filterStatus === 'pending' && order.payment_status !== 'Paid') ||
+      (filterStatus === 'to_deliver' && order.payment_status === 'Paid' && order.status === 'Processing');
 
     return matchesSearch && matchesStatus;
   });
@@ -157,7 +181,12 @@ export default function Admin({ navigate }) {
   // ─── HELPERS ──────────────────────────────────────────────────────────────────
   const fmt = (n) => `₹${parseFloat(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`;
   const fmtDate = (d) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-  const isFailedAwb = (awb) => !awb || awb.includes('SR-FAIL') || awb.includes('PENDING');
+  const STATUS_COLORS = {
+    Processing: '#f59e0b',
+    Shipped: '#60a5fa',
+    Delivered: '#34d399',
+    Cancelled: '#f87171',
+  };
 
   // ─── UI ───────────────────────────────────────────────────────────────────────
   return (
@@ -230,6 +259,9 @@ export default function Admin({ navigate }) {
             grid-template-columns: 50px 1fr 1fr;
             grid-template-rows: auto auto;
           }
+          .admin-col-headers { display: none !important; }
+          .admin-order-detail { grid-template-columns: 1fr !important; }
+          .admin-search { width: 100% !important; }
         }
       `}</style>
 
@@ -267,7 +299,8 @@ export default function Admin({ navigate }) {
             {[
               { icon: '📦', label: 'Total Orders', value: stats.total_orders, color: '#60a5fa' },
               { icon: '✅', label: 'Paid Orders', value: stats.paid_orders, color: '#34d399' },
-              { icon: '⏳', label: 'Pending', value: stats.pending_orders, color: '#f59e0b' },
+              { icon: '🚚', label: 'To Deliver', value: stats.to_deliver ?? 0, color: '#fb923c' },
+              { icon: '⏳', label: 'Unpaid', value: stats.pending_orders, color: '#f59e0b' },
               { icon: '💰', label: 'Total Revenue', value: fmt(stats.total_revenue), color: '#FF5A36' },
               { icon: '👥', label: 'Customers', value: stats.total_customers, color: '#a78bfa' },
               { icon: '🗓️', label: "Today's Orders", value: stats.today_orders, color: '#2dd4bf' },
@@ -300,7 +333,7 @@ export default function Admin({ navigate }) {
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
               <input
                 type="text"
-                className="admin-input"
+                className="admin-input admin-search"
                 placeholder="🔍  Search order #, name, email, city…"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
@@ -313,14 +346,15 @@ export default function Admin({ navigate }) {
                 style={{ cursor: 'pointer' }}
               >
                 <option value="all">All Status</option>
+                <option value="to_deliver">To Deliver</option>
                 <option value="paid">Paid</option>
-                <option value="pending">Pending</option>
+                <option value="pending">Unpaid</option>
               </select>
             </div>
           </div>
 
           {/* Column headers */}
-          <div style={{
+          <div className="admin-col-headers" style={{
             display: 'grid',
             gridTemplateColumns: '60px 1.6fr 1.2fr 100px 110px 110px 140px',
             gap: '12px',
@@ -337,7 +371,7 @@ export default function Admin({ navigate }) {
             <div>Address</div>
             <div>Amount</div>
             <div>Payment</div>
-            <div>Shipment</div>
+            <div>Delivery</div>
             <div>Actions</div>
           </div>
 
@@ -351,8 +385,8 @@ export default function Admin({ navigate }) {
               filteredOrders.map(order => {
                 const isExpanded = expandedOrder === order.id;
                 const isPaid = order.payment_status === 'Paid';
-                const isShipped = order.shipping_status && !['Failed', 'Pending'].includes(order.shipping_status);
-                const hasGoodAwb = order.awb_code && !isFailedAwb(order.awb_code);
+                const deliveryStatus = STATUS_COLORS[order.status] ? order.status : 'Processing';
+                const statusColor = STATUS_COLORS[deliveryStatus];
 
                 return (
                   <div key={order.id} className="admin-order-row">
@@ -392,15 +426,22 @@ export default function Admin({ navigate }) {
                         </span>
                       </div>
 
-                      {/* Shipping status */}
-                      <div>
-                        <span className="admin-badge" style={{
-                          background: isShipped ? 'rgba(96,165,250,0.15)' : 'rgba(148,163,184,0.1)',
-                          color: isShipped ? '#60a5fa' : '#64748b',
-                          border: `1px solid ${isShipped ? 'rgba(96,165,250,0.3)' : 'rgba(148,163,184,0.2)'}`
-                        }}>
-                          {order.shipping_status || 'Processing'}
-                        </span>
+                      {/* Delivery status (editable) */}
+                      <div onClick={e => e.stopPropagation()}>
+                        {isPaid ? (
+                          <select
+                            className="admin-input"
+                            aria-label={`Delivery status for order ${order.id}`}
+                            value={deliveryStatus}
+                            disabled={updatingStatusId === order.id}
+                            onChange={e => updateOrderStatus(order.id, e.target.value)}
+                            style={{ padding: '4px 8px', fontSize: '0.78rem', fontWeight: 700, color: statusColor, borderColor: `${statusColor}66`, cursor: 'pointer', width: '100%' }}
+                          >
+                            {Object.keys(STATUS_COLORS).map(s => <option key={s} value={s}>{s}</option>)}
+                          </select>
+                        ) : (
+                          <span style={{ color: '#64748b', fontSize: '0.78rem' }}>—</span>
+                        )}
                       </div>
 
                       {/* Actions */}
@@ -429,23 +470,12 @@ export default function Admin({ navigate }) {
                         >
                           🖨️ Print
                         </button>
-                        {hasGoodAwb && (
-                          <a
-                            href={order.tracking_url || `https://shiprocket.co/tracking/${order.awb_code}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="admin-btn"
-                            style={{ background: 'rgba(96,165,250,0.15)', color: '#60a5fa', border: '1px solid rgba(96,165,250,0.25)', padding: '5px 10px', textDecoration: 'none' }}
-                          >
-                            🚚 Track
-                          </a>
-                        )}
                       </div>
                     </div>
 
                     {/* Expanded order detail */}
                     {isExpanded && (
-                      <div style={{
+                      <div className="admin-order-detail" style={{
                         borderTop: '1px solid rgba(255,255,255,0.06)',
                         padding: '20px 20px 24px',
                         display: 'grid',
@@ -503,20 +533,15 @@ export default function Admin({ navigate }) {
                             background: 'rgba(255,255,255,0.04)', borderRadius: '12px',
                             border: '1px solid rgba(255,255,255,0.07)', padding: '16px'
                           }}>
-                            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '10px' }}>🚚 Shipment Info</div>
+                            <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '10px' }}>🚚 Local Delivery</div>
                             <div style={{ fontSize: '0.83rem', color: '#94a3b8', lineHeight: 1.8 }}>
-                              <div><span style={{ color: '#64748b' }}>Courier:</span> <strong style={{ color: '#e2e8f0' }}>{order.courier_name || '—'}</strong></div>
-                              <div><span style={{ color: '#64748b' }}>AWB:</span> <code style={{ background: 'rgba(255,255,255,0.06)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.8rem', color: '#60a5fa' }}>
-                                {hasGoodAwb ? order.awb_code : 'Pending assignment'}
-                              </code></div>
-                              <div><span style={{ color: '#64748b' }}>Shiprocket Order ID:</span> <span style={{ color: '#e2e8f0' }}>{order.shiprocket_order_id || '—'}</span></div>
-                              <div><span style={{ color: '#64748b' }}>Payment Ref:</span> <span style={{ color: '#e2e8f0', fontSize: '0.78rem' }}>{order.payment_id || '—'}</span></div>
+                              <div><span style={{ color: '#64748b' }}>Status:</span> <strong style={{ color: statusColor }}>{isPaid ? deliveryStatus : 'Awaiting payment'}</strong></div>
+                              <div><span style={{ color: '#64748b' }}>Customer email:</span> <span style={{ color: '#e2e8f0' }}>{order.customer_email || '—'}</span></div>
+                              <div><span style={{ color: '#64748b' }}>Payment Ref:</span> <span style={{ color: '#e2e8f0', fontSize: '0.78rem', wordBreak: 'break-all' }}>{order.payment_id || '—'}</span></div>
                             </div>
-                            {hasGoodAwb && (
+                            {(order.shipping_phone || order.customer_phone) && (
                               <a
-                                href={order.tracking_url || `https://shiprocket.co/tracking/${order.awb_code}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                                href={`tel:+91${order.shipping_phone || order.customer_phone}`}
                                 style={{
                                   display: 'inline-flex', alignItems: 'center', gap: '6px',
                                   marginTop: '12px', padding: '8px 16px',
@@ -525,7 +550,7 @@ export default function Admin({ navigate }) {
                                   fontWeight: 700, fontSize: '0.82rem', textDecoration: 'none'
                                 }}
                               >
-                                🚚 Track on Shiprocket ➔
+                                📞 Call Customer
                               </a>
                             )}
                           </div>

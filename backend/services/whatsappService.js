@@ -1,101 +1,67 @@
+import axios from 'axios';
 import twilio from 'twilio';
 import dotenv from 'dotenv';
 dotenv.config();
 
+// Store owner's WhatsApp number that receives "new order" alerts.
+const ADMIN_WHATSAPP_NUMBER = process.env.ADMIN_WHATSAPP_NUMBER || '9899923670';
+
+/** Normalizes an Indian phone number to digits-only E.164 without "+", e.g. "919899923670". */
+function normalizeIndianPhone(phone) {
+  let digits = String(phone).replace(/\D/g, '');
+  if (digits.length === 10) digits = `91${digits}`;
+  return digits;
+}
+
 /**
- * Returns an initialized Twilio client, or null if not configured.
+ * Option A (recommended, free): CallMeBot — sends WhatsApp messages to your own number.
+ * One-time setup: see README "WhatsApp order alerts". Needs CALLMEBOT_API_KEY in .env.
  */
-function getTwilioClient() {
+async function sendViaCallMeBot(phone, text) {
+  const apiKey = process.env.CALLMEBOT_API_KEY;
+  if (!apiKey) return false;
+
+  const res = await axios.get('https://api.callmebot.com/whatsapp.php', {
+    params: { phone: `+${normalizeIndianPhone(phone)}`, text, apikey: apiKey },
+    timeout: 15000
+  });
+  const body = String(res.data || '');
+  if (/error|invalid/i.test(body) && !/queued|sent/i.test(body)) {
+    throw new Error(`CallMeBot rejected the message: ${body.slice(0, 200)}`);
+  }
+  return true;
+}
+
+/**
+ * Option B: Twilio WhatsApp. Needs TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_WHATSAPP_FROM.
+ */
+async function sendViaTwilio(phone, text) {
   const sid = process.env.TWILIO_ACCOUNT_SID;
   const token = process.env.TWILIO_AUTH_TOKEN;
+  if (!sid || !token || sid.startsWith('your-')) return false;
 
-  if (!sid || !token || sid.startsWith('your-')) {
-    console.warn('[WhatsApp] Twilio credentials not configured. WhatsApp messages will be skipped.');
-    return null;
-  }
-
-  return twilio(sid, token);
+  const fromNumber = (process.env.TWILIO_WHATSAPP_FROM || '+14155238886').replace(/^whatsapp:/, '');
+  await twilio(sid, token).messages.create({
+    from: `whatsapp:${fromNumber}`,
+    to: `whatsapp:+${normalizeIndianPhone(phone)}`,
+    body: text
+  });
+  return true;
 }
 
 /**
- * Sends a WhatsApp message via Twilio WhatsApp Business API.
- * @param {string} toPhone - Customer's phone number (e.g. "9876543210")
- * @param {string} message - Message text body
+ * Sends "new order arrived" WhatsApp alert to the store owner.
  */
-async function sendWhatsAppMessage(toPhone, message) {
-  const client = getTwilioClient();
-  if (!client) return;
+export async function sendAdminNewOrderWhatsApp({ orderId, totalAmount, customerName }) {
+  const text = `new order arrived, please check Website admin panel\n\nOrder #${orderId} · ₹${parseFloat(totalAmount || 0).toFixed(2)} · ${customerName || 'Customer'}`;
 
-  const from = `whatsapp:${process.env.TWILIO_WHATSAPP_FROM || 'whatsapp:+14155238886'}`;
-
-  // Normalize Indian phone number to E.164 format
-  let normalized = String(toPhone).replace(/\D/g, '');
-  if (normalized.length === 10) {
-    normalized = `91${normalized}`;
-  }
-  const to = `whatsapp:+${normalized}`;
-
-  try {
-    const msg = await client.messages.create({ from, to, body: message });
-    console.log(`[WhatsApp] ✅ Message sent to ${to}. SID: ${msg.sid}`);
-  } catch (err) {
-    console.error(`[WhatsApp] ❌ Failed to send to ${to}:`, err.message);
-  }
-}
-
-/**
- * Sends an order confirmation WhatsApp message to the customer.
- */
-export async function sendOrderConfirmationWhatsApp({ orderId, customerName, customerPhone, totalAmount, items }) {
-  if (!customerPhone) {
-    console.warn('[WhatsApp] No phone number for customer, skipping.');
+  if (await sendViaCallMeBot(ADMIN_WHATSAPP_NUMBER, text)) {
+    console.log(`[WhatsApp] ✅ New-order alert sent via CallMeBot for order #${orderId}`);
     return;
   }
-
-  const itemLines = items
-    .map(i => `  • ${i.title} × ${i.quantity} — ₹${(parseFloat(i.price) * i.quantity).toFixed(2)}`)
-    .join('\n');
-
-  const message = `
-🎉 *Order Confirmed — Mindfuels*
-
-Hi *${customerName}*! Your order has been placed successfully.
-
-📦 *Order ID:* #${orderId}
-💰 *Total Paid:* ₹${parseFloat(totalAmount).toFixed(2)}
-🚚 *Delivery:* FREE (4–7 business days)
-
-*Items Ordered:*
-${itemLines}
-
-You will receive a tracking update on this number once your books are dispatched by our courier partner.
-
-Thank you for choosing Mindfuels! 📚✨
-`.trim();
-
-  await sendWhatsAppMessage(customerPhone, message);
-}
-
-/**
- * Sends a shipping dispatched notification.
- */
-export async function sendShippingUpdateWhatsApp({ customerPhone, customerName, orderId, awbCode, courierName, trackingUrl }) {
-  if (!customerPhone) return;
-
-  const message = `
-📦 *Your Order is Dispatched! — Mindfuels*
-
-Hi *${customerName}*! Great news — your books are on their way!
-
-📋 *Order ID:* #${orderId}
-🚚 *Courier:* ${courierName}
-🔖 *AWB / Tracking No:* ${awbCode}
-${trackingUrl ? `🔗 *Track here:* ${trackingUrl}` : ''}
-
-Expected delivery: 4–7 business days.
-
-Happy Reading! 📖✨
-`.trim();
-
-  await sendWhatsAppMessage(customerPhone, message);
+  if (await sendViaTwilio(ADMIN_WHATSAPP_NUMBER, text)) {
+    console.log(`[WhatsApp] ✅ New-order alert sent via Twilio for order #${orderId}`);
+    return;
+  }
+  console.warn('[WhatsApp] No WhatsApp provider configured (set CALLMEBOT_API_KEY). Alert skipped.');
 }

@@ -1,6 +1,6 @@
 import express from 'express';
 import { checkJwt, ensureUser, requireAdmin } from '../middleware/auth.js';
-import { getAdminStats, getAllOrders, getOrderDetail } from '../controllers/adminController.js';
+import { getAdminStats, getAllOrders, getOrderDetail, updateOrderStatus } from '../controllers/adminController.js';
 
 const router = express.Router();
 
@@ -10,5 +10,6 @@ router.use(checkJwt, ensureUser, requireAdmin);
 router.get('/stats', getAdminStats);
 router.get('/orders', getAllOrders);
 router.get('/orders/:id', getOrderDetail);
+router.put('/orders/:id/status', updateOrderStatus);
 
 export default router;

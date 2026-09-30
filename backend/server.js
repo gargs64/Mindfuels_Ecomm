@@ -171,13 +171,25 @@ const staticPath = candidatePaths.find(p => fs.existsSync(path.join(p, 'index.ht
 if (staticPath) {
   console.log(`[Server] Serving frontend static assets from: ${staticPath}`);
   app.use(express.static(staticPath, {
-    maxAge: '7d',
-    immutable: true,
     etag: true,
-    lastModified: true
+    lastModified: true,
+    index: false,
+    setHeaders: (res, filePath) => {
+      if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+        // Vite adds a content hash to these filenames, so they can be cached forever
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      } else if (filePath.endsWith('.html')) {
+        // Always revalidate HTML so visitors get the latest deploy
+        res.setHeader('Cache-Control', 'no-cache');
+      } else {
+        // Photos, videos, favicon: cache for a week but allow updates
+        res.setHeader('Cache-Control', 'public, max-age=604800');
+      }
+    }
   }));
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api') || req.path === '/health' || req.path === '/robots.txt' || req.path === '/sitemap.xml') return next();
+    res.setHeader('Cache-Control', 'no-cache');
     res.sendFile(path.join(staticPath, 'index.html'), (err) => {
       if (err) {
         res.status(404).json({ error: 'Page not found' });

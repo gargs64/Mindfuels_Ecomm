@@ -85,12 +85,13 @@ export default function LegalPages() {
         <section id="shipping" className="glass-panel legal-content-card" style={{ padding: '30px', borderRadius: '16px', border: '1px solid var(--border)' }}>
           <h2 style={{ fontSize: '1.8rem', marginBottom: '16px', borderBottom: '2px solid var(--primary)', paddingBottom: '6px', width: 'fit-content' }}>Shipping Policy</h2>
           <p style={{ color: 'var(--dark)', marginBottom: '12px' }}>
-            We are proud to offer <strong>FREE SHIPPING</strong> across all serviceable pin codes in Delhi NCR and throughout India. We partner with India's leading logistics carriers (Delhivery, BlueDart, Xpressbees, etc.) via Fship to guarantee swift, dependable delivery to your doorstep.
+            We are proud to offer <strong>FREE SHIPPING</strong> on every order. Orders are packed and dispatched directly by the Mindfuels team to ensure careful, dependable delivery to your doorstep.
           </p>
           <ul style={{ paddingLeft: '20px', color: 'var(--dark-light)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <li>An order confirmation email with your receipt is sent as soon as your payment is received.</li>
             <li>Orders are processed and dispatched within 24–48 hours of order confirmation.</li>
-            <li>Estimated delivery times: 2–4 business days for Delhi NCR and metro hubs; 4–7 business days for other regional areas.</li>
-            <li>Upon dispatch, a live tracking link with an AWB waybill number is sent to your email and accessible in your customer profile.</li>
+            <li>Estimated delivery times: 2–4 business days for Delhi NCR; 4–7 business days for other areas.</li>
+            <li>You can check your order's delivery status anytime under My Orders in your profile, or WhatsApp us at +91 98999 23670.</li>
           </ul>
         </section>
 
@@ -114,7 +115,7 @@ export default function LegalPages() {
             Your privacy and data security are our top priorities. This policy documents how we collect, store, and utilize details regarding your customer account, shipping destinations, and transactions.
           </p>
           <p style={{ color: 'var(--dark-light)' }}>
-            We do not store credit card credentials, bank passwords, or UPI PINs on our servers; all payments are processed securely via PCI-DSS compliant Razorpay. Shipping details are transmitted securely via API to Fship logistics to facilitate order fulfillment.
+            We do not store credit card credentials, bank passwords, or UPI PINs on our servers; all payments are processed securely via PCI-DSS compliant Razorpay. Your shipping details are used only by our team to deliver your order.
           </p>
         </section>
 
