@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
+import { AnimatePresence } from 'motion/react';
+import * as m from 'motion/react-m';
 import { useCart } from '../context/CartContext.jsx';
 import { useWishlist } from '../context/WishlistContext.jsx';
+import { backdropMotion, dialogMotion, popoverMotion, drawerMotion } from '../utils/motionPresets.js';
 
 export default function Navbar({ currentPath, navigate }) {
   const { isAuthenticated, user, loginWithRedirect, logout } = useAuth0();
@@ -137,9 +140,11 @@ export default function Navbar({ currentPath, navigate }) {
             </button>
             
             {/* Wishlist Preview Dropdown */}
+            <AnimatePresence>
             {wishlistMenuOpen && (
-              <div className="wishlist-popup glass-panel" style={{
-                position: 'absolute', right: 0, top: '45px', width: '320px', padding: '16px', borderRadius: '12px', zIndex: 1010
+              <m.div className="wishlist-popup glass-panel" {...popoverMotion} style={{
+                position: 'absolute', right: 0, top: '45px', width: '320px', padding: '16px', borderRadius: '12px', zIndex: 1010,
+                transformOrigin: 'top right'
               }}>
                 <h4 style={{ marginBottom: '12px', fontSize: '1rem', borderBottom: '1px solid var(--border)', paddingBottom: '8px' }}>My Wishlist</h4>
                 {wishlistItems.length === 0 ? (
@@ -176,8 +181,9 @@ export default function Navbar({ currentPath, navigate }) {
                     ))}
                   </div>
                 )}
-              </div>
+              </m.div>
             )}
+            </AnimatePresence>
           </div>
 
           {/* Cart Icon — hidden on mobile (in bottom nav) */}
@@ -269,8 +275,10 @@ export default function Navbar({ currentPath, navigate }) {
                   </button>
 
                   {/* Account Context Dropdown Menu */}
+                  <AnimatePresence>
                   {accountMenuOpen && (
-                    <div className="account-popup" style={{
+                    <m.div className="account-popup" {...popoverMotion} style={{
+                      transformOrigin: 'top right',
                       position: 'absolute',
                       right: '-4px',
                       top: '48px',
@@ -318,8 +326,9 @@ export default function Navbar({ currentPath, navigate }) {
                       <div className="account-menu-link" onClick={() => { navigate('/profile?tab=wishlist'); setAccountMenuOpen(false); }}>My Wishlist ({wishlistItems.length})</div>
                       <div className="account-menu-link" onClick={() => { navigate('/profile?tab=addresses'); setAccountMenuOpen(false); }}>Addresses</div>
                       <div className="account-menu-link" onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })} style={{ color: 'var(--error)' }}>Logout</div>
-                    </div>
+                    </m.div>
                   )}
+                  </AnimatePresence>
                 </>
               );
             })() : (
@@ -426,8 +435,9 @@ export default function Navbar({ currentPath, navigate }) {
       </nav>
 
       {/* Slide-In Mobile Drawer */}
+      <AnimatePresence>
       {mobileMenuOpen && (
-        <div className="mobile-drawer glass-panel" style={{
+        <m.div className="mobile-drawer glass-panel" {...drawerMotion} style={{
           position: 'fixed', top: '60px', left: 0, right: 0, bottom: 0, background: 'rgba(255,255,255,0.95)',
           padding: '24px', zIndex: 999, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px'
         }}>
@@ -466,16 +476,18 @@ export default function Navbar({ currentPath, navigate }) {
               <div onClick={() => handleDropdownNavigate('subject', 'Mental Ability & GK')}>Mental Ability & GK</div>
             </div>
           </div>
-        </div>
+        </m.div>
       )}
+      </AnimatePresence>
 
       {/* Global Search Overlay Modal */}
+      <AnimatePresence>
       {searchOpen && (
-        <div className="search-overlay" style={{
+        <m.div className="search-overlay" {...backdropMotion} style={{
           position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(30, 41, 59, 0.75)',
           backdropFilter: 'blur(8px)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center'
         }}>
-          <div className="glass-panel" style={{ width: '90%', maxWidth: '600px', padding: '24px', borderRadius: '16px', position: 'relative' }}>
+          <m.div className="glass-panel" {...dialogMotion} style={{ width: '90%', maxWidth: '600px', padding: '24px', borderRadius: '16px', position: 'relative' }}>
             <button onClick={() => setSearchOpen(false)} style={{ position: 'absolute', top: '16px', right: '16px', fontSize: '1.2rem', color: 'var(--dark-light)' }}>
               ✕
             </button>
@@ -496,9 +508,10 @@ export default function Navbar({ currentPath, navigate }) {
                 Search
               </button>
             </form>
-          </div>
-        </div>
+          </m.div>
+        </m.div>
       )}
+      </AnimatePresence>
 
       {/* Nav Dropdowns CSS Styles */}
       <style>{`

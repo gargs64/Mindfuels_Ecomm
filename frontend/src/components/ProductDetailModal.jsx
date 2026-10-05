@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
+import * as m from 'motion/react-m';
 import { useCart } from '../context/CartContext.jsx';
 import { useWishlist } from '../context/WishlistContext.jsx';
 import { getApiUrl, resilientFetch } from '../utils/api.js';
 import { setDynamicSchema, removeDynamicSchema, updatePageSEO } from '../utils/seo.js';
+import { backdropMotion, dialogMotion, sheetMotion } from '../utils/motionPresets.js';
 
 export default function ProductDetailModal({ productId, onClose }) {
   const { addToCart } = useCart();
@@ -14,6 +16,8 @@ export default function ProductDetailModal({ productId, onClose }) {
   const [retryTrigger, setRetryTrigger] = useState(0);
   const [activeImage, setActiveImage] = useState('');
   const [quantity, setQuantity] = useState(1);
+  // Phones get a bottom sheet that slides up; larger screens get a centred dialog
+  const [isMobile] = useState(() => window.matchMedia('(max-width: 768px)').matches);
 
   const API_URL = getApiUrl();
 
@@ -122,12 +126,14 @@ export default function ProductDetailModal({ productId, onClose }) {
 
   if (loading) {
     return (
-      <div 
+      <m.div 
         className="modal-backdrop" 
         onClick={handleBackdropClick}
+        {...backdropMotion}
       >
-        <div 
+        <m.div 
           className="glass-panel" 
+          {...dialogMotion}
           style={{ padding: '40px', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }} 
           onClick={(e) => e.stopPropagation()}
           onTouchStart={(e) => e.stopPropagation()}
@@ -135,19 +141,21 @@ export default function ProductDetailModal({ productId, onClose }) {
         >
           <div className="spinner"></div>
           <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--dark-light)', fontWeight: 500 }}>Loading book details...</p>
-        </div>
-      </div>
+        </m.div>
+      </m.div>
     );
   }
 
   if (error) {
     return (
-      <div 
+      <m.div 
         className="modal-backdrop" 
         onClick={handleBackdropClick}
+        {...backdropMotion}
       >
-        <div 
+        <m.div 
           className="glass-panel" 
+          {...dialogMotion}
           style={{ padding: '40px', borderRadius: '16px', textAlign: 'center', maxWidth: '400px' }} 
           onClick={(e) => e.stopPropagation()}
           onTouchStart={(e) => e.stopPropagation()}
@@ -172,8 +180,8 @@ export default function ProductDetailModal({ productId, onClose }) {
               Close
             </button>
           </div>
-        </div>
-      </div>
+        </m.div>
+      </m.div>
     );
   }
 
@@ -240,9 +248,10 @@ export default function ProductDetailModal({ productId, onClose }) {
   };
 
   return (
-    <div className="modal-backdrop" onClick={handleBackdropClick} onTouchStart={handleBackdropTouchStart} onTouchEnd={handleBackdropTouchEnd}>
-      <div 
-        className="modal-card fade-in glass-panel" 
+    <m.div className="modal-backdrop" onClick={handleBackdropClick} onTouchStart={handleBackdropTouchStart} onTouchEnd={handleBackdropTouchEnd} {...backdropMotion}>
+      <m.div 
+        className="modal-card glass-panel" 
+        {...(isMobile ? sheetMotion : dialogMotion)}
         onClick={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
         onTouchEnd={(e) => e.stopPropagation()}
@@ -405,7 +414,7 @@ export default function ProductDetailModal({ productId, onClose }) {
             </>
           )}
         </div>
-      </div>
+      </m.div>
 
       <style>{`
         .modal-backdrop {
@@ -587,6 +596,6 @@ export default function ProductDetailModal({ productId, onClose }) {
           }
         }
       `}</style>
-    </div>
+    </m.div>
   );
 }

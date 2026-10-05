@@ -1,4 +1,5 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
+import { AnimatePresence, LazyMotion, MotionConfig } from 'motion/react';
 import { CartProvider } from './context/CartContext.jsx';
 import { WishlistProvider } from './context/WishlistContext.jsx';
 
@@ -6,6 +7,9 @@ import { WishlistProvider } from './context/WishlistContext.jsx';
 import Navbar from './components/Navbar.jsx';
 import Footer from './components/Footer.jsx';
 import ProductDetailModal from './components/ProductDetailModal.jsx';
+
+// Motion animation features — fetched after first render to keep the initial bundle small
+const loadMotionFeatures = () => import('./utils/motionFeatures.js').then(res => res.default);
 
 // Pages — loaded on demand so the home page downloads less JavaScript
 const AllProducts = lazy(() => import('./pages/AllProducts.jsx'));
@@ -113,6 +117,8 @@ function MainApp() {
   const handleCloseProductModal = () => {
     // Remove product parameter from URL query string
     const params = new URLSearchParams(window.location.search);
+    // Already closed — ignore repeat clicks / Escape presses while the exit animation plays
+    if (!params.has('product')) return;
     params.delete('product');
     const searchString = params.toString();
     const newUrl = window.location.pathname + (searchString ? `?${searchString}` : '');
@@ -170,22 +176,29 @@ function MainApp() {
 
       <Footer navigate={navigate} />
 
-      {activeProductId && (
-        <ProductDetailModal 
-          productId={activeProductId} 
-          onClose={handleCloseProductModal} 
-        />
-      )}
+      <AnimatePresence>
+        {activeProductId && (
+          <ProductDetailModal 
+            key="product-modal"
+            productId={activeProductId} 
+            onClose={handleCloseProductModal} 
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
 export default function App() {
   return (
-    <CartProvider>
-      <WishlistProvider>
-        <MainApp />
-      </WishlistProvider>
-    </CartProvider>
+    <LazyMotion features={loadMotionFeatures} strict>
+      <MotionConfig reducedMotion="user">
+        <CartProvider>
+          <WishlistProvider>
+            <MainApp />
+          </WishlistProvider>
+        </CartProvider>
+      </MotionConfig>
+    </LazyMotion>
   );
 }
