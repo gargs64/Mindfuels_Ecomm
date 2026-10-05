@@ -249,7 +249,9 @@ export default function ProductDetailModal({ productId, onClose }) {
 
   return (
     <m.div className="modal-backdrop" onClick={handleBackdropClick} onTouchStart={handleBackdropTouchStart} onTouchEnd={handleBackdropTouchEnd} {...backdropMotion}>
-      <m.div 
+      {/* Keyed so it mounts fresh after the loading panel and plays its own entrance */}
+      <m.div
+        key="content"
         className="modal-card glass-panel" 
         {...(isMobile ? sheetMotion : dialogMotion)}
         onClick={(e) => e.stopPropagation()}
