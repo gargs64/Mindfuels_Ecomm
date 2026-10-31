@@ -104,7 +104,7 @@ export default function LegalPages() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', color: 'var(--dark-light)', marginTop: '12px' }}>
             <div><strong>Email Support:</strong> mindfuelspublisher@gmail.com</div>
             <div><strong>Support & WhatsApp Helpline:</strong> +91 98999 23670 (Mon-Sat, 9:30 AM - 6:30 PM IST)</div>
-            <div><strong>Registered Office / Hub:</strong> Mindfuels Publisher & Distributors, Nai Sarak / Daryaganj Commercial Area, Delhi - 110006, India</div>
+            <div><strong>Registered Office / Hub:</strong> Mindfuels Publisher & Distributors, Sri Nagar, Delhi 110034, India</div>
           </div>
         </section>
 

@@ -39,6 +39,8 @@
 
 html, body {
   overflow-x: hidden;
+  /* clip (where supported) hides overflow without making body a scroll box, so position: sticky keeps working */
+  overflow-x: clip;
   max-width: 100vw;
 }
 
@@ -547,6 +549,7 @@ img, video {
 @media (max-width: 768px) {
   html, body {
     overflow-x: hidden !important;
+    overflow-x: clip !important;
     max-width: 100vw !important;
   }
 
@@ -643,3 +646,446 @@ img, video {
 }
 
 
+/* ═══════════════════════════════════
+   BOOK CARD (ProductCard) & CATALOG GRID
+   ═══════════════════════════════════ */
+.mf-card {
+  --mf-card-radius: 18px;
+  --mf-card-accent: #C2410C;       /* brand orange darkened for AA text contrast */
+  --mf-card-accent-soft: #FFF1EC;
+  --mf-card-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.05);
+  --mf-card-shadow-hover: 0 4px 8px rgba(15, 23, 42, 0.04), 0 18px 36px -10px rgba(15, 23, 42, 0.18);
+  position: relative;
+  isolation: isolate;
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--mf-card-radius);
+  box-shadow: var(--mf-card-shadow);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 0.2s ease;
+}
+
+/* Hover shadow lives on a pseudo-element so only its opacity animates */
+.mf-card::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  border-radius: inherit;
+  box-shadow: var(--mf-card-shadow-hover);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+
+.mf-card:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+}
+
+.mf-card-media {
+  position: relative;
+  aspect-ratio: 10 / 13;
+  overflow: hidden;
+  background: #F1F5F9;
+  border-radius: calc(var(--mf-card-radius) - 1px) calc(var(--mf-card-radius) - 1px) 0 0;
+}
+
+.mf-card-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Shown when a product has no cover or the cover URL fails to load */
+.mf-card-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 16px;
+  text-align: center;
+  color: var(--mf-card-accent);
+  background:
+    radial-gradient(circle at 85% 12%, rgba(255, 210, 90, 0.35) 0 18%, transparent 19%),
+    radial-gradient(circle at 10% 90%, rgba(74, 144, 226, 0.14) 0 22%, transparent 23%),
+    var(--mf-card-accent-soft);
+}
+
+.mf-card-placeholder svg {
+  margin-bottom: 4px;
+}
+
+.mf-card-placeholder-brand {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.mf-card-placeholder-note {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--dark-light);
+}
+
+.mf-card-soldout {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(248, 250, 252, 0.6);
+}
+
+.mf-card-soldout span {
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--dark);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.mf-card-wish {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--dark-light);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.mf-card-wish:hover,
+.mf-card-wish.is-active {
+  color: var(--error);
+  background: #fff;
+}
+
+.mf-card-wish:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.mf-card-body {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  gap: 8px;
+  padding: 14px 16px 16px;
+}
+
+.mf-card-tag {
+  align-self: flex-start;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #EFF6FF;
+  color: #1D4ED8;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.mf-card-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.7em;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--dark);
+  overflow-wrap: break-word;
+}
+
+.mf-card-price {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 8px;
+  row-gap: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.mf-card-sp {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--dark);
+}
+
+.mf-card-mrp {
+  font-size: 0.85rem;
+  color: #64748B;
+  text-decoration: line-through;
+}
+
+.mf-card-off {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #047857;
+}
+
+/* Card actions: [ Add to cart ] [ → details ] */
+.mf-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.mf-card-add,
+.mf-card-details {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  border-radius: 12px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.mf-card-add {
+  flex: 1;
+  min-width: 0;
+  gap: 6px;
+  padding: 0 10px;
+  background: var(--mf-card-accent);   /* white on #C2410C passes AA */
+  color: #fff;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.mf-card-add:hover:not(:disabled) {
+  background: #9A3412;
+}
+
+.mf-card-add.is-added {
+  background: #047857;
+}
+
+.mf-card-add:disabled {
+  cursor: not-allowed;
+}
+
+.mf-card-add:disabled:not(.is-added) {
+  background: #E2E8F0;
+  color: #475569;
+}
+
+.mf-card-details {
+  flex: 0 0 44px;
+  background: var(--mf-card-accent-soft);
+  color: var(--mf-card-accent);
+}
+
+.mf-card-details svg {
+  transition: transform 0.2s ease;
+}
+
+.mf-card-details:hover {
+  background: #FFE4D9;
+}
+
+.mf-card-add:focus-visible,
+.mf-card-details:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.mf-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (hover: hover) {
+  .mf-card:hover {
+    border-color: #FED7CB;
+  }
+  .mf-card:hover::after {
+    opacity: 1;
+  }
+  .mf-card:hover .mf-card-media img {
+    transform: scale(1.04);
+  }
+  .mf-card:hover .mf-card-details svg {
+    transform: translateX(2px);
+  }
+}
+
+/* Compact card for narrow slots (home carousels on phones, 4-up grid) */
+@container (max-width: 220px) {
+  .mf-card-body {
+    gap: 6px;
+    padding: 10px 12px 12px;
+  }
+  .mf-card-title {
+    font-size: 0.875rem;
+  }
+  .mf-card-sp {
+    font-size: 1.05rem;
+  }
+  .mf-card-actions {
+    gap: 6px;
+  }
+  .mf-card-add {
+    padding: 0 6px;
+    font-size: 0.82rem;
+    border-radius: 10px;
+  }
+  .mf-card-add-icon {
+    display: none;
+  }
+  .mf-card-details {
+    flex-basis: 40px;
+    border-radius: 10px;
+  }
+  .mf-card-wish {
+    top: 6px;
+    right: 6px;
+    width: 36px;
+    height: 36px;
+  }
+  .mf-card-tag {
+    padding: 2px 8px;
+    font-size: 0.7rem;
+  }
+  .mf-card-mrp {
+    font-size: 0.78rem;
+  }
+  .mf-card-off {
+    font-size: 0.75rem;
+  }
+}
+
+/* Invisible padding keeps the heart a 44px touch target even when it's drawn smaller */
+.mf-card-wish::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mf-card-media img,
+  .mf-card-details svg {
+    transition: none;
+  }
+  .mf-card:hover .mf-card-media img,
+  .mf-card:hover .mf-card-details svg {
+    transform: none;
+  }
+}
+
+/* Catalog grid: 2 columns on phones and tablets, 3–4 on desktop */
+.catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.catalog-grid-item {
+  min-width: 0;
+}
+
+/* Show the whole cover (no cropped titles) on a soft backdrop */
+.catalog-grid .mf-card-media {
+  aspect-ratio: 3 / 4;
+}
+
+.catalog-grid .mf-card-media img {
+  object-fit: contain;
+  padding: 10px;
+}
+
+@media (min-width: 600px) {
+  .catalog-grid {
+    gap: 20px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .catalog-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .catalog-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.catalog-grid .mf-skel-media {
+  aspect-ratio: 3 / 4;
+}
+
+/* Two-up phones: tighter cover padding so the book reads larger */
+@media (max-width: 599px) {
+  .catalog-grid .mf-card-media img {
+    padding: 6px;
+  }
+}
+
+/* Catalog loading skeleton */
+.mf-skel-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+}
+
+.mf-skel-media {
+  aspect-ratio: 10 / 13;
+  background: #EEF2F6;
+}
+
+.mf-skel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px 16px;
+}
+
+.mf-skel-line {
+  height: 14px;
+  border-radius: 6px;
+  background: #EEF2F6;
+}

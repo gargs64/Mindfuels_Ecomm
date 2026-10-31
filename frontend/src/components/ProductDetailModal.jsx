@@ -14,8 +14,14 @@ export default function ProductDetailModal({ productId, onClose }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [retryTrigger, setRetryTrigger] = useState(0);
-  const [activeImage, setActiveImage] = useState('');
+  // Gallery is a swipeable scroll-snap track; activeIndex follows the swipe and drives the dots
+  const [activeIndex, setActiveIndex] = useState(0);
+  const trackRef = useRef(null);
+  const [adding, setAdding] = useState(false);
   const [quantity, setQuantity] = useState(1);
+  // After "Add to Cart" the sheet stays open with a confirmation and a "Go to cart" shortcut
+  const [justAdded, setJustAdded] = useState(false);
+  const [failedImages, setFailedImages] = useState([]);
   // Phones get a bottom sheet that slides up; larger screens get a centred dialog
   const [isMobile] = useState(() => window.matchMedia('(max-width: 768px)').matches);
 
@@ -34,7 +40,7 @@ export default function ProductDetailModal({ productId, onClose }) {
         if (response.ok) {
           const data = await response.json();
           setProduct(data);
-          setActiveImage(data.image1 || '/photos/1-story-book.jpeg');
+          setActiveIndex(0);
           setQuantity(1); // Reset qty
 
           // Dynamic Product SEO & JSON-LD Structured Data
@@ -224,28 +230,101 @@ export default function ProductDetailModal({ productId, onClose }) {
     }
   };
 
+  // Scroll the track to a picture (arrows + thumbnails on desktop; phones just swipe)
+  const goToImage = (index) => {
+    const track = trackRef.current;
+    if (!track || images.length === 0) return;
+    const next = (index + images.length) % images.length;
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    track.scrollTo({ left: next * track.clientWidth, behavior: reduceMotion ? 'auto' : 'smooth' });
+    setActiveIndex(next);
+  };
+
+  const handleTrackScroll = (e) => {
+    const track = e.currentTarget;
+    if (!track.clientWidth) return;
+    const index = Math.round(track.scrollLeft / track.clientWidth);
+    if (index !== activeIndex) setActiveIndex(index);
+  };
+
   const handlePrevImage = (e) => {
     e.stopPropagation();
-    const currentIndex = images.indexOf(activeImage);
-    if (currentIndex > -1) {
-      const prevIndex = (currentIndex - 1 + images.length) % images.length;
-      setActiveImage(images[prevIndex]);
-    }
+    goToImage(activeIndex - 1);
   };
 
   const handleNextImage = (e) => {
     e.stopPropagation();
-    const currentIndex = images.indexOf(activeImage);
-    if (currentIndex > -1) {
-      const nextIndex = (currentIndex + 1) % images.length;
-      setActiveImage(images[nextIndex]);
-    }
+    goToImage(activeIndex + 1);
   };
 
-  const handleAddToCartClick = () => {
-    addToCart(product, quantity);
-    onClose();
+  const handleAddToCartClick = async () => {
+    if (adding) return;
+    setAdding(true);
+    const added = await addToCart(product, quantity);
+    setAdding(false);
+    if (added) setJustAdded(true);
   };
+
+  // Same history-based navigation App uses; dropping ?product also closes this sheet
+  const handleGoToCart = () => {
+    window.history.pushState({}, '', '/cart');
+    window.dispatchEvent(new Event('popstate'));
+    window.scrollTo(0, 0);
+  };
+
+  const renderImagePlaceholder = () => (
+    /* Branded placeholder for a missing or broken photo */
+    <div className="modal-img-placeholder" role="img" aria-label={product.title}>
+      <svg width="56" height="56" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+        <path d="M9 7h7M9 11h5" />
+      </svg>
+      <strong>Mindfuels</strong>
+      <span>Photo coming soon</span>
+    </div>
+  );
+
+  const renderBuyActions = (variant) => justAdded ? (
+    <>
+      <span className="modal-added-note" role="status">
+        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M20 6 9 17l-5-5" />
+        </svg>
+        Added to cart
+      </span>
+      <button onClick={handleGoToCart} className="btn btn-primary" style={{ flex: 1, padding: '14px 20px', fontSize: '1rem' }}>
+        Go to cart
+        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M5 12h14M13 6l6 6-6 6" />
+        </svg>
+      </button>
+    </>
+  ) : (
+    <>
+      {/* Quantity Counter */}
+      <div style={{ display: 'flex', alignItems: 'center', border: '2px solid var(--border)', borderRadius: '50px', background: '#fff' }}>
+        <button onClick={handleDecrement} disabled={quantity <= 1} aria-label="Decrease quantity" style={{ width: '44px', height: '44px', fontSize: '1.2rem', fontWeight: 'bold' }}>−</button>
+        <input
+          type="number"
+          value={quantity}
+          onChange={handleQuantityInputChange}
+          aria-label="Quantity"
+          inputMode="numeric"
+          style={{ width: variant === 'mobile' ? '40px' : '50px', textAlign: 'center', border: 'none', fontWeight: 'bold', fontSize: '1rem' }}
+        />
+        <button onClick={handleIncrement} disabled={quantity >= product.stock_qty} aria-label="Increase quantity" style={{ width: '44px', height: '44px', fontSize: '1.2rem', fontWeight: 'bold' }}>+</button>
+      </div>
+      {/* Add to Cart button */}
+      <button onClick={handleAddToCartClick} disabled={adding} className="btn btn-primary" style={{ flex: 1, padding: '14px 20px', fontSize: '1rem' }}>
+        <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+        </svg>
+        {adding ? 'Adding…' : 'Add to Cart'}
+      </button>
+    </>
+  );
 
   return (
     <m.div className="modal-backdrop" onClick={handleBackdropClick} onTouchStart={handleBackdropTouchStart} onTouchEnd={handleBackdropTouchEnd} {...backdropMotion}>
@@ -260,7 +339,7 @@ export default function ProductDetailModal({ productId, onClose }) {
       >
         
         {/* Mobile drag handle */}
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 0 0' }}>
+        <div className="modal-drag-handle" style={{ display: 'flex', justifyContent: 'center', padding: '10px 0 0 0' }}>
           <div style={{ width: '40px', height: '4px', borderRadius: '2px', background: 'var(--border)' }}></div>
         </div>
 
@@ -273,6 +352,32 @@ export default function ProductDetailModal({ productId, onClose }) {
           {/* Left Side: Photo Gallery Column */}
           <div className="gallery-section">
             <div className="main-preview-container">
+              {/* Swipeable track — one picture per slide, snaps into place */}
+              <div
+                className="gallery-track"
+                ref={trackRef}
+                onScroll={handleTrackScroll}
+                aria-roledescription="carousel"
+                aria-label={`${product.title} pictures`}
+              >
+                {images.length === 0 ? (
+                  <div className="gallery-slide">{renderImagePlaceholder()}</div>
+                ) : images.map((img, idx) => (
+                  <div className="gallery-slide" key={idx} aria-roledescription="slide" aria-label={`${idx + 1} of ${images.length}`}>
+                    {failedImages.includes(img) ? renderImagePlaceholder() : (
+                      <img
+                        src={img}
+                        alt={idx === 0 ? product.title : `${product.title} — picture ${idx + 1}`}
+                        className="main-preview-img"
+                        loading={idx === 0 ? 'eager' : 'lazy'}
+                        draggable="false"
+                        onError={() => setFailedImages(prev => [...prev, img])}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+
               {images.length > 1 && (
                 <>
                   <button onClick={handlePrevImage} className="gallery-nav-btn" style={{ left: '12px' }} aria-label="Previous image">
@@ -289,20 +394,34 @@ export default function ProductDetailModal({ productId, onClose }) {
                   </button>
                 </>
               )}
-              <img src={activeImage} alt={product.title} style={{ userSelect: 'none' }} />
             </div>
-            
-            {/* Thumbnail Row */}
+
+            {/* Phone: dots under the picture; the active one stretches as you swipe */}
+            {images.length > 1 && (
+              <div className="gallery-dots" aria-hidden="true">
+                {images.map((_, idx) => (
+                  <span key={idx} className={`gallery-dot ${idx === activeIndex ? 'is-active' : ''}`} />
+                ))}
+              </div>
+            )}
+            <span className="modal-sr-only" aria-live="polite">
+              {images.length > 1 ? `Picture ${activeIndex + 1} of ${images.length}` : ''}
+            </span>
+
+            {/* Desktop: Thumbnail Row */}
             {images.length > 1 && (
               <div className="thumbnail-row">
                 {images.map((img, idx) => (
-                  <div
+                  <button
                     key={idx}
-                    onClick={() => setActiveImage(img)}
-                    className={`thumb-container ${activeImage === img ? 'active-thumb' : ''}`}
+                    type="button"
+                    onClick={() => goToImage(idx)}
+                    className={`thumb-container ${activeIndex === idx ? 'active-thumb' : ''}`}
+                    aria-label={`Show picture ${idx + 1} of ${images.length}`}
+                    aria-current={activeIndex === idx ? 'true' : undefined}
                   >
-                    <img src={img} alt={`Preview ${idx + 1}`} />
-                  </div>
+                    <img src={img} alt="" loading="lazy" onError={(e) => { e.currentTarget.style.visibility = 'hidden'; }} />
+                  </button>
                 ))}
               </div>
             )}
@@ -310,16 +429,17 @@ export default function ProductDetailModal({ productId, onClose }) {
 
           {/* Right Side: Product Details Column */}
           <div className="details-section">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div>
-                <h2 style={{ fontSize: '1.6rem', fontWeight: 800, lineHeight: 1.25 }}>{product.title}</h2>
+            <div className="modal-title-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+              <div style={{ minWidth: 0 }}>
+                <h2 className="modal-title">{product.title}</h2>
               </div>
               
               {/* Wishlist Heart Action inside details */}
               <button onClick={() => toggleWishlist(product)} style={{
                 color: isWish ? 'var(--error)' : 'var(--dark-light)',
-                padding: '6px'
-              }} aria-label="Wishlist">
+                padding: '9px',
+                flexShrink: 0
+              }} aria-label={isWish ? 'Remove from wishlist' : 'Add to wishlist'}>
                 <svg width="26" height="26" fill={isWish ? "var(--error)" : "none"} stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                 </svg>
@@ -327,8 +447,8 @@ export default function ProductDetailModal({ productId, onClose }) {
             </div>
 
             {/* Price section */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 0', borderBottom: '1px solid var(--border)' }}>
-              <span style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--primary)' }}>₹{product.sp}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--border)' }}>
+              <span className="modal-price">₹{product.sp}</span>
               {isDiscounted && (
                 <>
                   <span style={{ fontSize: '1.2rem', color: 'var(--dark-light)', textDecoration: 'line-through' }}>₹{product.mrp}</span>
@@ -338,7 +458,8 @@ export default function ProductDetailModal({ productId, onClose }) {
             </div>
 
             {/* Description */}
-            <div style={{ padding: '16px 0', flexGrow: 1, maxHeight: '200px', overflowY: 'auto' }}>
+            {/* Takes whatever height is left; long text scrolls here so the buy button stays on screen */}
+            <div className="modal-description">
               <h4 style={{ fontSize: '0.9rem', color: 'var(--dark-light)', marginBottom: '6px' }}>Description</h4>
               <p style={{ fontSize: '0.95rem', color: 'var(--dark)', whiteSpace: 'pre-line' }}>{product.description}</p>
             </div>
@@ -355,34 +476,16 @@ export default function ProductDetailModal({ productId, onClose }) {
               </div>
             ) : (
               <div className="modal-desktop-cta" style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                {/* Quantity Counter */}
-                <div style={{ display: 'flex', alignItems: 'center', border: '2px solid var(--border)', borderRadius: '50px', background: '#fff' }}>
-                  <button onClick={handleDecrement} style={{ width: '40px', height: '40px', fontSize: '1.2rem', fontWeight: 'bold' }}>−</button>
-                  <input
-                    type="number"
-                    value={quantity}
-                    onChange={handleQuantityInputChange}
-                    style={{ width: '50px', textAlign: 'center', border: 'none', fontWeight: 'bold', fontSize: '1rem' }}
-                  />
-                  <button onClick={handleIncrement} style={{ width: '40px', height: '40px', fontSize: '1.2rem', fontWeight: 'bold' }}>+</button>
-                </div>
-                {/* Add to Cart button */}
-                <button onClick={handleAddToCartClick} className="btn btn-primary" style={{ flexGrow: 1, padding: '14px 20px' }}>
-                  <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                    <circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle>
-                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-                  </svg>
-                  Add to Cart
-                </button>
+                {renderBuyActions('desktop')}
               </div>
             )}
           </div>
         </div>
 
-        {/* Sticky Mobile Add-to-Cart Bar */}
+        {/* Mobile Add-to-Cart Bar — last row of the sheet, always visible */}
         <div className="modal-mobile-cta" style={{
           display: 'none',
-          position: 'absolute', bottom: 0, left: 0, right: 0,
+          flexShrink: 0,
           padding: '12px 16px',
           background: 'rgba(255,255,255,0.97)',
           backdropFilter: 'blur(12px)',
@@ -396,25 +499,7 @@ export default function ProductDetailModal({ productId, onClose }) {
             }}>
               Out of Stock
             </div>
-          ) : (
-            <>
-              <div style={{ display: 'flex', alignItems: 'center', border: '2px solid var(--border)', borderRadius: '50px', background: '#fff' }}>
-                <button onClick={handleDecrement} style={{ width: '42px', height: '42px', fontSize: '1.2rem', fontWeight: 'bold' }}>−</button>
-                <input
-                  type="number" value={quantity} onChange={handleQuantityInputChange}
-                  style={{ width: '44px', textAlign: 'center', border: 'none', fontWeight: 'bold', fontSize: '1rem' }}
-                />
-                <button onClick={handleIncrement} style={{ width: '42px', height: '42px', fontSize: '1.2rem', fontWeight: 'bold' }}>+</button>
-              </div>
-              <button onClick={handleAddToCartClick} className="btn btn-primary" style={{ flex: 1, padding: '14px 20px', fontSize: '1rem' }}>
-                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle>
-                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-                </svg>
-                Add to Cart
-              </button>
-            </>
-          )}
+          ) : renderBuyActions('mobile')}
         </div>
       </m.div>
 
@@ -441,16 +526,21 @@ export default function ProductDetailModal({ productId, onClose }) {
           border-radius: 20px;
           position: relative;
           overflow: hidden;
-          max-height: 90vh;
+          /* Fixed height so everything fits in one screen — nothing below the fold */
+          height: min(88vh, 720px);
+          height: min(88dvh, 720px);
           display: flex;
           flex-direction: column;
         }
+        .modal-drag-handle {
+          display: none !important;
+        }
         .modal-close-btn {
           position: absolute;
-          top: 16px;
-          right: 16px;
-          width: 32px;
-          height: 32px;
+          top: 10px;
+          right: 10px;
+          width: 44px;
+          height: 44px;
           border-radius: 50%;
           background: var(--light);
           display: flex;
@@ -464,10 +554,12 @@ export default function ProductDetailModal({ productId, onClose }) {
           background: var(--border);
         }
         .modal-content-grid {
+          flex: 1 1 auto;
+          min-height: 0;
           display: grid;
           grid-template-columns: 1.1fr 1fr;
-          height: 100%;
-          overflow-y: auto;
+          grid-template-rows: minmax(0, 1fr);
+          overflow: hidden;
         }
         .gallery-section {
           padding: 24px;
@@ -475,13 +567,14 @@ export default function ProductDetailModal({ productId, onClose }) {
           border-right: 1px solid var(--border);
           display: flex;
           flex-direction: column;
-          gap: 16px;
-          justify-content: center;
+          gap: 12px;
+          min-height: 0;
         }
         .main-preview-container {
           position: relative;
           width: 100%;
-          aspect-ratio: 1/1.25;
+          flex: 1 1 auto;
+          min-height: 0;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -515,12 +608,107 @@ export default function ProductDetailModal({ productId, onClose }) {
         .gallery-nav-btn:active {
           transform: translateY(-50%) scale(0.95);
         }
-        .main-preview-container img {
-          max-width: 100%;
-          max-height: 100%;
+        /* Image fills whatever space is left and scales down to fit */
+        .main-preview-container .main-preview-img {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
           object-fit: contain;
         }
+        /* Swipe gallery: native horizontal scroll with snap — smooth on low-end phones */
+        .gallery-track {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          overflow-x: auto;
+          overflow-y: hidden;
+          scroll-snap-type: x mandatory;
+          overscroll-behavior-x: contain;
+          scrollbar-width: none;
+          -webkit-overflow-scrolling: touch;
+        }
+        .gallery-track::-webkit-scrollbar {
+          display: none;
+        }
+        .gallery-slide {
+          position: relative;
+          flex: 0 0 100%;
+          scroll-snap-align: center;
+          scroll-snap-stop: always;
+        }
+        .gallery-slide .main-preview-img {
+          -webkit-user-select: none;
+          user-select: none;
+        }
+        .gallery-dots {
+          display: none;
+          justify-content: center;
+          align-items: center;
+          gap: 6px;
+          flex-shrink: 0;
+        }
+        .gallery-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 999px;
+          background: #CBD5E1;
+          transition: width 0.25s ease, background-color 0.25s ease;
+        }
+        .gallery-dot.is-active {
+          width: 20px;
+          background: var(--dark);
+        }
+        .modal-sr-only {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          overflow: hidden;
+          clip: rect(0, 0, 0, 0);
+          white-space: nowrap;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .gallery-dot {
+            transition: none;
+          }
+        }
+        .modal-img-placeholder {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          background: #FFF1EC;
+          color: #C2410C;
+          text-align: center;
+        }
+        .modal-img-placeholder strong {
+          font-family: var(--font-display);
+          font-size: 1.2rem;
+        }
+        .modal-img-placeholder span {
+          font-size: 0.85rem;
+          color: var(--dark-light);
+        }
+        .modal-added-note {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          color: #047857;
+          font-weight: 700;
+          font-size: 0.95rem;
+          white-space: nowrap;
+        }
+        .modal-close-btn:focus-visible,
+        .thumb-container:focus-visible,
+        .gallery-nav-btn:focus-visible {
+          outline: 2px solid var(--primary);
+          outline-offset: 2px;
+        }
         .thumbnail-row {
+          flex-shrink: 0;
           display: flex;
           gap: 8px;
           overflow-x: auto;
@@ -547,12 +735,39 @@ export default function ProductDetailModal({ productId, onClose }) {
           border-color: var(--primary);
         }
         .details-section {
-          padding: 32px;
+          padding: 32px 32px 28px;
           display: flex;
           flex-direction: column;
-          justify-content: space-between;
+          gap: 14px;
+          min-height: 0;
+          overflow-y: auto; /* safety net for very short windows only */
         }
-        
+        .modal-title {
+          font-size: clamp(1.2rem, 0.9rem + 0.8vw, 1.5rem);
+          font-weight: 800;
+          line-height: 1.25;
+        }
+        .modal-title-row {
+          padding-right: 36px; /* keep the heart clear of the close button */
+        }
+        .modal-card button:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
+        }
+        .modal-price {
+          font-size: 1.75rem;
+          font-weight: 800;
+          color: var(--primary);
+        }
+        .modal-description {
+          flex: 1 1 auto;
+          min-height: 0;
+          overflow-y: auto;
+        }
+        .modal-desktop-cta {
+          flex-shrink: 0;
+        }
+
         /* Hide arrows for quantity input number */
         input::-webkit-outer-spin-button,
         input::-webkit-inner-spin-button {
@@ -570,31 +785,75 @@ export default function ProductDetailModal({ productId, onClose }) {
           }
           .modal-card {
             border-radius: 20px 20px 0 0;
+            height: auto;
             max-height: 92vh;
+            max-height: 92dvh;
             width: 100%;
             max-width: 100%;
           }
-          .modal-content-grid {
-            grid-template-columns: 1fr;
-            overflow-y: auto;
+          .modal-drag-handle {
+            display: flex !important;
+            flex-shrink: 0;
           }
+          /* Sheet stacks: image → details (description shrinks) → buy bar */
+          .modal-content-grid {
+            display: flex;
+            flex-direction: column;
+          }
+          /* Phone gallery: big edge-to-edge picture, swipe + dots, no arrows or thumbnails */
           .gallery-section {
+            flex-shrink: 0;
             border-right: none;
             border-bottom: 1px solid var(--border);
-            padding: 16px;
+            padding: 6px 0 10px;
+            gap: 10px;
+            background: #fff;
           }
           .main-preview-container {
-            aspect-ratio: 3/4;
-            max-height: 260px;
+            flex: none;
+            height: min(48vh, 440px);
+            height: min(48dvh, 440px);
+            border: none;
+            border-radius: 0;
+          }
+          .gallery-nav-btn,
+          .thumbnail-row {
+            display: none !important;
+          }
+          .gallery-dots {
+            display: flex;
           }
           .details-section {
-            padding: 16px 16px 80px 16px;
+            flex: 1 1 auto;
+            padding: 12px 16px;
+            gap: 10px;
+          }
+          .modal-title-row {
+            padding-right: 0;
+          }
+          .modal-title {
+            font-size: 1.1rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+          }
+          .modal-price {
+            font-size: 1.5rem;
           }
           .modal-mobile-cta {
             display: flex !important;
           }
           .modal-desktop-cta {
             display: none !important;
+          }
+        }
+
+        /* Short phones: slightly smaller picture so the buy bar stays in view */
+        @media (max-width: 768px) and (max-height: 680px) {
+          .main-preview-container {
+            height: 40vh;
+            height: 40dvh;
           }
         }
       `}</style>

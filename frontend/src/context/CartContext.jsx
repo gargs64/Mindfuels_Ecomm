@@ -68,11 +68,12 @@ export const CartProvider = ({ children }) => {
     }
   };
 
+  // Resolves true once the item is saved, false otherwise, so buttons can show "Added" only on success
   const addToCart = async (product, quantity = 1) => {
     if (!isAuthenticated) {
       // Redirect to login — no guest cart
       loginWithRedirect();
-      return;
+      return false;
     }
 
     try {
@@ -92,9 +93,11 @@ export const CartProvider = ({ children }) => {
       }
 
       await fetchDBCart(token);
+      return true;
     } catch (error) {
       console.error(error);
       alert(error.message);
+      return false;
     }
   };
 

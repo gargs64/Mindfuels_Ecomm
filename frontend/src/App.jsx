@@ -110,8 +110,11 @@ function MainApp() {
   // Helper function to navigate Programmatically without page reloads
   const navigate = (path, search = '') => {
     const targetUrl = path + (search ? `?${search}` : '');
+    const isNewPage = path !== window.location.pathname;
     window.history.pushState({}, '', targetUrl);
     window.dispatchEvent(new Event('popstate'));
+    // A new page starts at the top; filter/page changes on the same page keep their place
+    if (isNewPage) window.scrollTo(0, 0);
   };
 
   const handleCloseProductModal = () => {
